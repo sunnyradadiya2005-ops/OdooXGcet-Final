@@ -16,7 +16,7 @@ export default function Header() {
       ]).then(([c, w]) => {
         setCartCount(c);
         setWishlistCount(w);
-      }).catch(() => {});
+      }).catch(() => { });
     }
   }, [user]);
 
@@ -77,7 +77,12 @@ export default function Header() {
                   </>
                 )}
                 <div className="flex items-center gap-2">
-                  {user.role === 'CUSTOMER' && <Link to="/orders">Orders</Link>}
+                  {user.role === 'CUSTOMER' && (
+                    <>
+                      <Link to="/orders" className="text-slate-700 hover:text-teal-600">Orders</Link>
+                      <Link to="/invoices" className="text-slate-700 hover:text-teal-600">Invoices</Link>
+                    </>
+                  )}
                   {(user.role === 'VENDOR' || user.role === 'ADMIN') && (
                     <Link to="/erp" className="text-teal-600 font-medium">
                       Dashboard

@@ -19,8 +19,15 @@ export default function ErpDashboard() {
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
+  const [metrics, setMetrics] = useState(null);
 
   useEffect(() => {
+    // Fetch metrics
+    api.get('/reports/dashboard-metrics')
+      .then((r) => setMetrics(r.data))
+      .catch(() => setMetrics(null));
+
+    // Fetch orders
     if (view === 'kanban') {
       api.get('/orders/kanban').then((r) => setKanban(r.data)).catch(() => setKanban({}));
     } else {
@@ -72,6 +79,28 @@ export default function ErpDashboard() {
 
   return (
     <ErpLayout>
+      {/* Metrics Cards */}
+      {metrics && (
+        <div className="grid grid-cols-4 gap-4 mb-6">
+          <div className="bg-white rounded-xl border border-slate-200 p-4">
+            <p className="text-sm text-slate-600 mb-1">Total Revenue (This Month)</p>
+            <p className="text-2xl font-bold text-teal-600">₹{metrics.totalRevenue.toFixed(2)}</p>
+          </div>
+          <div className="bg-white rounded-xl border border-slate-200 p-4">
+            <p className="text-sm text-slate-600 mb-1">Total Orders (This Month)</p>
+            <p className="text-2xl font-bold text-slate-800">{metrics.totalOrders}</p>
+          </div>
+          <div className="bg-white rounded-xl border border-slate-200 p-4">
+            <p className="text-sm text-slate-600 mb-1">Active Rentals</p>
+            <p className="text-2xl font-bold text-amber-600">{metrics.activeRentals}</p>
+          </div>
+          <div className="bg-white rounded-xl border border-slate-200 p-4">
+            <p className="text-sm text-slate-600 mb-1">Pending Returns</p>
+            <p className="text-2xl font-bold text-red-600">{metrics.pendingReturns}</p>
+          </div>
+        </div>
+      )}
+
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-2xl font-bold text-slate-800">Orders</h1>
         <div className="flex gap-4">

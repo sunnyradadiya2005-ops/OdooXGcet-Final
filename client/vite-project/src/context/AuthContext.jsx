@@ -63,8 +63,18 @@ export function AuthProvider({ children }) {
     return data;
   };
 
+  const requestOtp = async (email) => {
+    const { data } = await api.post('/auth/request-otp', { email });
+    return data;
+  };
+
+  const verifyOtp = async (email, otp) => {
+    const { data } = await api.post('/auth/verify-otp', { email, otp });
+    return data;
+  };
+
   return (
-    <AuthContext.Provider value={{ user, loading, login, logout, registerCustomer, registerVendor }}>
+    <AuthContext.Provider value={{ user, loading, login, logout, registerCustomer, registerVendor, requestOtp, verifyOtp }}>
       {children}
     </AuthContext.Provider>
   );

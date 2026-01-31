@@ -18,6 +18,8 @@ import Orders from './pages/Orders';
 import OrderDetail from './pages/OrderDetail';
 import OrderCheckout from './pages/OrderCheckout';
 import OrderConfirmation from './pages/OrderConfirmation';
+import Invoices from './pages/Invoices';
+import InvoiceDetail from './pages/InvoiceDetail';
 import Terms from './pages/Terms';
 import About from './pages/About';
 import Contact from './pages/Contact';
@@ -29,6 +31,7 @@ import ErpNewOrder from './pages/erp/ErpNewOrder';
 import ErpInvoices from './pages/erp/ErpInvoices';
 import ErpInvoiceDetail from './pages/erp/ErpInvoiceDetail';
 import ErpProducts from './pages/erp/ErpProducts';
+import ErpProductForm from './pages/erp/ErpProductForm';
 import ErpCustomers from './pages/erp/ErpCustomers';
 import ErpReports from './pages/erp/ErpReports';
 import ErpSettings from './pages/erp/ErpSettings';
@@ -85,38 +88,15 @@ export default function App() {
               </CustomerLayout>
             }
           />
-          <Route
-            path="/orders"
-            element={
-              <CustomerLayout>
-                <Orders />
-              </CustomerLayout>
-            }
-          />
-          <Route
-            path="/orders/:id"
-            element={
-              <CustomerLayout>
-                <OrderDetail />
-              </CustomerLayout>
-            }
-          />
-          <Route
-            path="/orders/:id/checkout"
-            element={
-              <CustomerLayout>
-                <OrderCheckout />
-              </CustomerLayout>
-            }
-          />
+          <Route path="/orders" element={<CustomerLayout><Orders /></CustomerLayout>} />
+          <Route path="/orders/:id" element={<CustomerLayout><OrderDetail /></CustomerLayout>} />
+          <Route path="/orders/:id/checkout" element={<CustomerLayout><OrderCheckout /></CustomerLayout>} />
           <Route
             path="/orders/:id/confirmation"
-            element={
-              <CustomerLayout>
-                <OrderConfirmation />
-              </CustomerLayout>
-            }
+            element={<CustomerLayout><OrderConfirmation /></CustomerLayout>}
           />
+          <Route path="/invoices" element={<CustomerLayout><Invoices /></CustomerLayout>} />
+          <Route path="/invoices/:id" element={<CustomerLayout><InvoiceDetail /></CustomerLayout>} />
           <Route
             path="/terms"
             element={
@@ -148,6 +128,8 @@ export default function App() {
           <Route path="/erp/invoices" element={<ErpInvoices />} />
           <Route path="/erp/invoices/:id" element={<ErpInvoiceDetail />} />
           <Route path="/erp/products" element={<ErpProducts />} />
+          <Route path="/erp/products/new" element={<ErpProductForm />} />
+          <Route path="/erp/products/:id/edit" element={<ErpProductForm />} />
           <Route path="/erp/customers" element={<ErpCustomers />} />
           <Route path="/erp/reports" element={<ErpReports />} />
           <Route path="/erp/settings" element={<ErpSettings />} />

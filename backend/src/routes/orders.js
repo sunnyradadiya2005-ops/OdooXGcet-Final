@@ -2,9 +2,47 @@ import { Router } from 'express';
 import { Decimal } from '@prisma/client/runtime/library';
 import prisma from '../lib/prisma.js';
 import { authenticate, requireRole } from '../middleware/auth.js';
-import { generateOrderNumber, generateQuoteNumber } from '../utils/generators.js';
+import { generateOrderNumber } from '../utils/generators.js';
+import { sendPickupConfirmation, sendLateReturnAlert } from '../utils/email.js';
+import { getSettingValue } from '../utils/settings.js';
 
 export const orderRoutes = Router();
+
+// Helper function to check product availability
+async function checkAvailability(productId, startDate, endDate, requestedQty) {
+  const start = new Date(startDate);
+  const end = new Date(endDate);
+
+  const product = await prisma.product.findUnique({
+    where: { id: productId },
+    select: { stockQty: true, name: true },
+  });
+
+  if (!product) {
+    throw new Error(`Product ${productId} not found`);
+  }
+
+  const reservations = await prisma.reservation.findMany({
+    where: {
+      productId,
+      status: 'active',
+      OR: [
+        { startDate: { lte: end }, endDate: { gte: start } },
+      ],
+    },
+  });
+
+  const booked = reservations.reduce((sum, r) => sum + r.quantity, 0);
+  const available = Math.max(0, product.stockQty - booked);
+
+  if (available < requestedQty) {
+    throw new Error(
+      `Product "${product.name}" only has ${available} available for the requested dates (${requestedQty} requested)`
+    );
+  }
+
+  return { available, product };
+}
 
 orderRoutes.use(authenticate);
 
@@ -146,6 +184,11 @@ orderRoutes.post('/from-cart', requireRole('CUSTOMER'), async (req, res) => {
 
     const orders = [];
     for (const [vendorId, items] of Object.entries(vendorGroups)) {
+      // Check availability for all items before creating order
+      for (const ci of items) {
+        await checkAvailability(ci.productId, ci.startDate, ci.endDate, ci.quantity);
+      }
+
       let subtotal = new Decimal(0);
       const orderItems = [];
 
@@ -233,6 +276,12 @@ orderRoutes.post('/', requireRole('VENDOR', 'ADMIN'), async (req, res) => {
 
     let subtotal = new Decimal(0);
     const orderItems = [];
+
+    // Check availability for all items before creating order
+    for (const li of items) {
+      await checkAvailability(li.productId, li.startDate, li.endDate, li.quantity || 1);
+    }
+
     for (const li of items) {
       const product = await prisma.product.findUnique({ where: { id: li.productId } });
       if (!product) return res.status(404).json({ error: `Product ${li.productId} not found` });
@@ -250,7 +299,8 @@ orderRoutes.post('/', requireRole('VENDOR', 'ADMIN'), async (req, res) => {
       });
     }
 
-    const taxAmount = subtotal.mul(0.18);
+    const taxRate = await getSettingValue('tax_rate', 0.18);
+    const taxAmount = subtotal.mul(taxRate);
     const totalAmount = subtotal.add(taxAmount);
 
     const order = await prisma.rentalOrder.create({
@@ -290,6 +340,22 @@ orderRoutes.patch('/:id/status', requireRole('VENDOR', 'ADMIN'), async (req, res
       include: { items: true },
     });
     if (!order) return res.status(404).json({ error: 'Order not found' });
+
+    // Validate status transitions
+    const validTransitions = {
+      QUOTATION: ['RENTAL_ORDER', 'CANCELLED'],
+      RENTAL_ORDER: ['CONFIRMED', 'CANCELLED'],
+      CONFIRMED: ['PICKED_UP', 'CANCELLED'],
+      PICKED_UP: ['RETURNED', 'CANCELLED'],
+      RETURNED: [], // Terminal state
+      CANCELLED: [], // Terminal state
+    };
+
+    if (!validTransitions[order.status]?.includes(status)) {
+      return res.status(400).json({
+        error: `Cannot transition from ${order.status} to ${status}. Valid transitions: ${validTransitions[order.status]?.join(', ') || 'none'}`,
+      });
+    }
 
     const updateData = {};
     if (status === 'CONFIRMED') {
@@ -343,16 +409,36 @@ orderRoutes.post('/:id/pickup', requireRole('VENDOR', 'ADMIN'), async (req, res)
         status: 'CONFIRMED',
         ...(req.user.role === 'VENDOR' ? { vendorId: req.user.vendor.id } : {}),
       },
+      include: {
+        customer: true,
+        vendor: true,
+        items: { include: { product: { select: { name: true } } } },
+        pickups: true,
+      },
     });
     if (!order) return res.status(400).json({ error: 'Order must be confirmed before pickup' });
+    if (order.pickups.length > 0) return res.status(400).json({ error: 'Order already picked up' });
 
-    await prisma.pickup.create({ data: { orderId: order.id, pickedAt: new Date() } });
+    const pickup = await prisma.pickup.create({
+      data: {
+        orderId: order.id,
+        pickedAt: new Date(),
+        notes: req.body.notes || null,
+      },
+    });
     await prisma.rentalOrder.update({
       where: { id: req.params.id },
       data: { status: 'PICKED_UP' },
     });
 
-    res.json({ message: 'Pickup confirmed' });
+    // Send pickup confirmation email
+    try {
+      await sendPickupConfirmation(order, order.customer, order.vendor);
+    } catch (emailErr) {
+      console.error('Failed to send pickup email:', emailErr);
+    }
+
+    res.json({ message: 'Pickup confirmed', pickup });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -360,35 +446,93 @@ orderRoutes.post('/:id/pickup', requireRole('VENDOR', 'ADMIN'), async (req, res)
 
 orderRoutes.post('/:id/return', requireRole('VENDOR', 'ADMIN'), async (req, res) => {
   try {
-    const { lateFee = 0, damageFee = 0 } = req.body;
     const order = await prisma.rentalOrder.findFirst({
       where: {
         id: req.params.id,
         status: 'PICKED_UP',
         ...(req.user.role === 'VENDOR' ? { vendorId: req.user.vendor.id } : {}),
       },
-      include: { items: true },
-    });
-    if (!order) return res.status(400).json({ error: 'Order must be picked up before return' });
-
-    await prisma.return.create({
-      data: {
-        orderId: order.id,
-        returnedAt: new Date(),
-        lateFee: parseFloat(lateFee) || 0,
-        damageFee: parseFloat(damageFee) || 0,
+      include: {
+        customer: true,
+        vendor: true,
+        items: { include: { product: { select: { name: true } } } },
+        returns: true,
+        invoices: true,
       },
     });
+    if (!order) return res.status(400).json({ error: 'Order must be picked up before return' });
+    if (order.returns.length > 0) return res.status(400).json({ error: 'Order already returned' });
+
+    const returnedAt = new Date();
+    // Use the latest end date among all items for calculating delay
+    const latestEndDate = order.items.length > 0 ? new Date(order.items[order.items.length - 1].endDate) : returnedAt;
+
+    // Calculate delay and late fee
+    let totalLateFee = 0;
+    let delayDays = 0;
+
+    if (order.status === 'PICKED_UP') {
+      delayDays = Math.max(0, Math.ceil((returnedAt.getTime() - latestEndDate.getTime()) / (1000 * 60 * 60 * 24)));
+      const LATE_FEE_PER_DAY = await getSettingValue('late_fee_per_day', parseFloat(process.env.LATE_FEE_PER_DAY || '100'));
+      const autoLateFee = delayDays > 0 ? delayDays * LATE_FEE_PER_DAY : 0;
+      const manualLateFee = parseFloat(req.body.lateFee || 0);
+      totalLateFee = Math.max(autoLateFee, manualLateFee);
+    }
+    const damageFee = parseFloat(req.body.damageFee || 0);
+
+    const returnRecord = await prisma.return.create({
+      data: {
+        orderId: order.id,
+        returnedAt,
+        lateFee: new Decimal(totalLateFee),
+        damageFee: new Decimal(damageFee),
+        notes: req.body.notes || null,
+      },
+    });
+
+    // Release reservations (restore stock)
     await prisma.reservation.updateMany({
       where: { orderId: order.id },
       data: { status: 'released' },
     });
+
     await prisma.rentalOrder.update({
       where: { id: req.params.id },
       data: { status: 'RETURNED' },
     });
 
-    res.json({ message: 'Return confirmed' });
+    // Update invoice with late fee if applicable
+    if ((totalLateFee > 0 || damageFee > 0) && order.invoices.length > 0) {
+      const invoice = order.invoices[0];
+      const additionalFees = new Decimal(totalLateFee).plus(damageFee);
+      await prisma.invoice.update({
+        where: { id: invoice.id },
+        data: {
+          lateFee: new Decimal(invoice.lateFee).plus(totalLateFee),
+          totalAmount: new Decimal(invoice.totalAmount).plus(additionalFees),
+        },
+      });
+    }
+
+    // Send late return alert if overdue
+    if (totalLateFee > 0) {
+      try {
+        await sendLateReturnAlert(order, order.customer, order.vendor, delayHours, totalLateFee);
+      } catch (emailErr) {
+        console.error('Failed to send late return alert:', emailErr);
+      }
+    }
+
+    res.json({
+      message: 'Return confirmed',
+      return: {
+        ...returnRecord,
+        lateFee: Number(returnRecord.lateFee),
+        damageFee: Number(returnRecord.damageFee),
+      },
+      delayDays,
+      lateFeeApplied: totalLateFee,
+    });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }

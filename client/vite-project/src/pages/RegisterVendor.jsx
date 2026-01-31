@@ -28,6 +28,10 @@ export default function RegisterVendor() {
   });
   const [errors, setErrors] = useState({});
   const [loading, setLoading] = useState(false);
+  const [otpSent, setOtpSent] = useState(false);
+  const [otp, setOtp] = useState('');
+  const [isVerified, setIsVerified] = useState(false);
+  const [verificationToken, setVerificationToken] = useState('');
 
   const validate = () => {
     const e = {};
@@ -45,18 +49,69 @@ export default function RegisterVendor() {
     return Object.keys(e).length === 0;
   };
 
+  const handleVerifyEmail = async () => {
+    if (!form.email.trim() || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) {
+      setErrors({ ...errors, email: 'Valid email required' });
+      return;
+    }
+    setLoading(true);
+    try {
+      const { requestOtp } = await import('../context/AuthContext');
+      await api.post('/auth/request-otp', { email: form.email });
+      setOtpSent(true);
+      setErrors({ ...errors, email: '' });
+      alert('OTP sent to your email');
+    } catch (err) {
+      setErrors({ ...errors, email: err.response?.data?.message || 'Failed to send OTP' });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleVerifyOtp = async () => {
+    if (!otp.trim()) {
+      setErrors({ ...errors, otp: 'Enter OTP' });
+      return;
+    }
+    setLoading(true);
+    try {
+      const { verifyOtp } = await import('../context/AuthContext');
+      const { data } = await api.post('/auth/verify-otp', { email: form.email, otp });
+      console.log('OTP verification response:', data);
+      setVerificationToken(data.verificationToken);
+      setIsVerified(true);
+      setErrors({ ...errors, otp: '' });
+      alert('Email verified successfully');
+    } catch (err) {
+      setErrors({ ...errors, otp: err.response?.data?.message || 'Invalid OTP' });
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!validate()) return;
+    if (!isVerified) {
+      setErrors({ ...errors, form: 'Please verify your email first' });
+      return;
+    }
     setLoading(true);
     try {
-      await registerVendor({
+      const payload = {
         ...form,
         confirmPassword: form.confirmPassword,
-      });
+        verificationToken,
+      };
+      console.log('Sending vendor registration payload:', payload);
+      await registerVendor(payload);
       navigate('/erp');
     } catch (err) {
-      setErrors({ form: err.response?.data?.message || 'Registration failed' });
+      console.error('Registration error details:', err.response?.data);
+      const errorMsg = err.response?.data?.errors
+        ? err.response.data.errors.map(e => e.msg).join(', ')
+        : err.response?.data?.message || 'Registration failed';
+      setErrors({ form: errorMsg });
     } finally {
       setLoading(false);
     }
@@ -142,14 +197,57 @@ export default function RegisterVendor() {
             </div>
             <div>
               <label className="block text-sm font-medium text-slate-700 mb-1">Email</label>
-              <input
-                type="email"
-                value={form.email}
-                onChange={(e) => setForm({ ...form, email: e.target.value })}
-                className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-teal-500"
-              />
+              <div className="flex gap-2">
+                <input
+                  type="email"
+                  value={form.email}
+                  onChange={(e) => setForm({ ...form, email: e.target.value })}
+                  disabled={isVerified}
+                  className="flex-1 px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-teal-500 disabled:bg-slate-100"
+                />
+                {!isVerified && !otpSent && (
+                  <button
+                    type="button"
+                    onClick={handleVerifyEmail}
+                    disabled={loading}
+                    className="px-4 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 disabled:opacity-50 whitespace-nowrap"
+                  >
+                    Send OTP
+                  </button>
+                )}
+                {isVerified && (
+                  <span className="flex items-center px-3 text-green-600 text-sm font-medium">
+                    ✓ Verified
+                  </span>
+                )}
+              </div>
               {errors.email && <p className="text-red-600 text-xs mt-1">{errors.email}</p>}
             </div>
+
+            {otpSent && !isVerified && (
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1">Enter OTP</label>
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    value={otp}
+                    onChange={(e) => setOtp(e.target.value)}
+                    placeholder="6-digit code"
+                    className="flex-1 px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-teal-500"
+                  />
+                  <button
+                    type="button"
+                    onClick={handleVerifyOtp}
+                    disabled={loading}
+                    className="px-4 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 disabled:opacity-50"
+                  >
+                    Verify
+                  </button>
+                </div>
+                {errors.otp && <p className="text-red-600 text-xs mt-1">{errors.otp}</p>}
+                <p className="text-xs text-slate-500 mt-1">Check your email for the verification code</p>
+              </div>
+            )}
             <div>
               <label className="block text-sm font-medium text-slate-700 mb-1">Password</label>
               <input

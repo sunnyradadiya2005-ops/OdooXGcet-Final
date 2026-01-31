@@ -29,7 +29,7 @@ export default function ErpReports() {
         setMostRented(rented);
         setVendorEarnings(vendor);
       })
-      .catch(() => {})
+      .catch(() => { })
       .finally(() => setLoading(false));
   }, [startDate, endDate, user?.role]);
 
@@ -50,6 +50,23 @@ export default function ErpReports() {
           onChange={(e) => setEndDate(e.target.value)}
           className="px-4 py-2 border rounded-lg"
         />
+        <div className="flex gap-2 ml-auto">
+          <a
+            href={`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/exports/revenue/pdf?startDate=${startDate}&endDate=${endDate}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 text-sm"
+          >
+            📄 Export PDF
+          </a>
+          <a
+            href={`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/exports/revenue/csv?startDate=${startDate}&endDate=${endDate}`}
+            download
+            className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 text-sm"
+          >
+            📊 Export CSV
+          </a>
+        </div>
       </div>
 
       {loading ? (
@@ -81,7 +98,16 @@ export default function ErpReports() {
           </div>
 
           <div className="bg-white rounded-xl border border-slate-200 p-6">
-            <h2 className="font-semibold text-slate-800 mb-4">Most Rented Products</h2>
+            <div className="flex justify-between items-center mb-4">
+              <h2 className="font-semibold text-slate-800">Most Rented Products</h2>
+              <a
+                href={`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/exports/most-rented/csv?startDate=${startDate}&endDate=${endDate}`}
+                download
+                className="px-3 py-1 bg-green-600 text-white rounded text-sm hover:bg-green-700"
+              >
+                📊 Export CSV
+              </a>
+            </div>
             <div className="space-y-2">
               {mostRented.slice(0, 10).map((item, i) => (
                 <div key={i} className="flex justify-between py-2 border-b border-slate-100">
@@ -97,7 +123,16 @@ export default function ErpReports() {
 
           {user?.role === 'ADMIN' && vendorEarnings.length > 0 && (
             <div className="bg-white rounded-xl border border-slate-200 p-6">
-              <h2 className="font-semibold text-slate-800 mb-4">Vendor Earnings</h2>
+              <div className="flex justify-between items-center mb-4">
+                <h2 className="font-semibold text-slate-800">Vendor Earnings</h2>
+                <a
+                  href={`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/exports/vendor-earnings/csv?startDate=${startDate}&endDate=${endDate}`}
+                  download
+                  className="px-3 py-1 bg-green-600 text-white rounded text-sm hover:bg-green-700"
+                >
+                  📊 Export CSV
+                </a>
+              </div>
               <div className="space-y-2">
                 {vendorEarnings.map((v, i) => (
                   <div key={i} className="flex justify-between py-2 border-b border-slate-100">

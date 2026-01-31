@@ -8,6 +8,7 @@ export default function OrderDetail() {
   const navigate = useNavigate();
   const { user } = useAuth();
   const [order, setOrder] = useState(null);
+  const [invoice, setInvoice] = useState(null);
 
   useEffect(() => {
     if (!user) {
@@ -18,6 +19,12 @@ export default function OrderDetail() {
       .get(`/orders/${id}`)
       .then((r) => setOrder(r.data))
       .catch(() => setOrder(null));
+
+    // Fetch invoice if exists
+    api
+      .get(`/invoices/by-order/${id}`)
+      .then((r) => setInvoice(r.data))
+      .catch(() => setInvoice(null));
   }, [id, user, navigate]);
 
   if (!user) return null;
@@ -48,13 +55,12 @@ export default function OrderDetail() {
         <div className="flex justify-between mb-4">
           <span className="text-slate-600">Status</span>
           <span
-            className={`px-3 py-1 rounded-full text-sm font-medium ${
-              order.status === 'RETURNED'
-                ? 'bg-green-100 text-green-800'
-                : order.status === 'CANCELLED'
+            className={`px-3 py-1 rounded-full text-sm font-medium ${order.status === 'RETURNED'
+              ? 'bg-green-100 text-green-800'
+              : order.status === 'CANCELLED'
                 ? 'bg-red-100 text-red-800'
                 : 'bg-teal-100 text-teal-800'
-            }`}
+              }`}
           >
             {order.status.replace('_', ' ')}
           </span>
@@ -103,6 +109,78 @@ export default function OrderDetail() {
           </Link>
         )}
       </div>
+
+      {/* Invoice Status */}
+      {invoice && (
+        <div className="bg-white rounded-xl border border-slate-200 p-6 mb-6">
+          <div className="flex justify-between items-center mb-4">
+            <h3 className="font-semibold text-slate-800">Invoice</h3>
+            <span
+              className={`px-3 py-1 rounded-full text-sm font-medium ${invoice.status === 'PAID'
+                  ? 'bg-green-100 text-green-800'
+                  : invoice.status === 'DRAFT'
+                    ? 'bg-slate-100 text-slate-800'
+                    : 'bg-amber-100 text-amber-800'
+                }`}
+            >
+              {invoice.status.replace('_', ' ')}
+            </span>
+          </div>
+          <p className="text-slate-600 text-sm mb-2">Invoice #{invoice.invoiceNumber}</p>
+          <p className="text-slate-600 text-sm mb-2">
+            Total: ₹{Number(invoice.totalAmount).toFixed(2)}
+          </p>
+          <p className="text-slate-600 text-sm mb-4">
+            Paid: ₹{Number(invoice.amountPaid).toFixed(2)}
+          </p>
+          <Link
+            to={`/invoices/${invoice.id}`}
+            className="text-teal-600 hover:underline text-sm"
+          >
+            View Invoice →
+          </Link>
+        </div>
+      )}
+
+      {/* Pickup Status */}
+      {order?.pickups?.[0] && (
+        <div className="bg-amber-50 rounded-xl border border-amber-200 p-6 mb-6">
+          <div className="flex items-center gap-2 mb-3">
+            <span className="text-amber-600 font-semibold">✓ Pickup Confirmed</span>
+          </div>
+          <p className="text-slate-600 text-sm">
+            Picked up: {new Date(order.pickups[0].pickedAt).toLocaleString()}
+          </p>
+          {order.pickups[0].notes && (
+            <p className="text-slate-600 text-sm mt-2">Notes: {order.pickups[0].notes}</p>
+          )}
+        </div>
+      )}
+
+      {/* Return Status */}
+      {order?.returns?.[0] && (
+        <div className="bg-green-50 rounded-xl border border-green-200 p-6 mb-6">
+          <div className="flex items-center gap-2 mb-3">
+            <span className="text-green-600 font-semibold">✓ Return Completed</span>
+          </div>
+          <p className="text-slate-600 text-sm">
+            Returned: {new Date(order.returns[0].returnedAt).toLocaleString()}
+          </p>
+          {Number(order.returns[0].lateFee) > 0 && (
+            <p className="text-red-600 text-sm mt-2">
+              Late Fee: ₹{Number(order.returns[0].lateFee).toFixed(2)}
+            </p>
+          )}
+          {Number(order.returns[0].damageFee) > 0 && (
+            <p className="text-red-600 text-sm">
+              Damage Fee: ₹{Number(order.returns[0].damageFee).toFixed(2)}
+            </p>
+          )}
+          {order.returns[0].notes && (
+            <p className="text-slate-600 text-sm mt-2">Notes: {order.returns[0].notes}</p>
+          )}
+        </div>
+      )}
     </div>
   );
 }

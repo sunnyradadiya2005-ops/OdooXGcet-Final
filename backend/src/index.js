@@ -11,6 +11,10 @@ import { reportRoutes } from './routes/reports.js';
 import { userRoutes } from './routes/users.js';
 import { couponRoutes } from './routes/coupons.js';
 import { wishlistRoutes } from './routes/wishlist.js';
+import { settingRoutes } from './routes/settings.js';
+import { profileRoutes } from './routes/profile.js';
+import { exportRoutes } from './routes/exports.js';
+import { startScheduler } from './jobs/scheduler.js';
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -32,6 +36,9 @@ app.use('/api/reports', reportRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/coupons', couponRoutes);
 app.use('/api/wishlist', wishlistRoutes);
+app.use('/api/settings', settingRoutes);
+app.use('/api/profile', profileRoutes);
+app.use('/api/exports', exportRoutes);
 
 // 404 handler
 app.use((req, res) => res.status(404).json({ error: 'Not found' }));
@@ -47,4 +54,7 @@ app.use((err, req, res, next) => {
 
 app.listen(PORT, () => {
   console.log(`KirayaKart API running on http://localhost:${PORT}`);
+
+  // Start scheduled jobs for return reminders and late detection
+  startScheduler();
 });

@@ -4,7 +4,7 @@ import { useAuth } from '../context/AuthContext';
 
 export default function Register() {
   const navigate = useNavigate();
-  const { registerCustomer } = useAuth();
+  const { registerCustomer, requestOtp, verifyOtp } = useAuth();
   const [form, setForm] = useState({
     firstName: '',
     lastName: '',
@@ -14,6 +14,10 @@ export default function Register() {
   });
   const [errors, setErrors] = useState({});
   const [loading, setLoading] = useState(false);
+  const [otpSent, setOtpSent] = useState(false);
+  const [otp, setOtp] = useState('');
+  const [isVerified, setIsVerified] = useState(false);
+  const [verificationToken, setVerificationToken] = useState('');
 
   const validate = () => {
     const e = {};
@@ -28,9 +32,50 @@ export default function Register() {
     return Object.keys(e).length === 0;
   };
 
+  const handleVerifyEmail = async () => {
+    if (!form.email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) {
+      setErrors({ ...errors, email: 'Enter a valid email first' });
+      return;
+    }
+    setLoading(true);
+    try {
+      await requestOtp(form.email);
+      setOtpSent(true);
+      setErrors({});
+    } catch (err) {
+      setErrors({ ...errors, email: err.response?.data?.message || 'Failed to send OTP' });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleVerifyOtp = async () => {
+    if (!otp || otp.length !== 6) {
+      setErrors({ ...errors, otp: 'Enter a valid 6-digit OTP' });
+      return;
+    }
+    setLoading(true);
+    try {
+      const data = await verifyOtp(form.email, otp);
+      setVerificationToken(data.verificationToken);
+      setIsVerified(true);
+      setOtpSent(false);
+      setErrors({});
+    } catch (err) {
+      setErrors({ ...errors, otp: err.response?.data?.message || 'Invalid OTP' });
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!validate()) return;
+    if (!isVerified) {
+      setErrors({ ...errors, form: 'Please verify your email first' });
+      return;
+    }
+
     setLoading(true);
     try {
       await registerCustomer({
@@ -39,6 +84,7 @@ export default function Register() {
         email: form.email,
         password: form.password,
         confirmPassword: form.confirmPassword,
+        verificationToken,
       });
       navigate('/');
     } catch (err) {
@@ -87,14 +133,54 @@ export default function Register() {
             </div>
             <div>
               <label className="block text-sm font-medium text-slate-700 mb-1">Email</label>
-              <input
-                type="email"
-                value={form.email}
-                onChange={(e) => setForm({ ...form, email: e.target.value })}
-                className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-teal-500"
-              />
+              <div className="flex gap-2">
+                <input
+                  type="email"
+                  value={form.email}
+                  disabled={isVerified}
+                  onChange={(e) => setForm({ ...form, email: e.target.value })}
+                  className="flex-1 px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-teal-500 disabled:bg-slate-100"
+                />
+                {!isVerified && !otpSent && (
+                  <button
+                    type="button"
+                    onClick={handleVerifyEmail}
+                    disabled={loading}
+                    className="px-4 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 disabled:opacity-50 text-sm whitespace-nowrap"
+                  >
+                    Verify
+                  </button>
+                )}
+              </div>
               {errors.email && <p className="text-red-600 text-xs mt-1">{errors.email}</p>}
+              {isVerified && <p className="text-green-600 text-xs mt-1">Email verified</p>}
             </div>
+
+            {otpSent && !isVerified && (
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1">Verification Code</label>
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    value={otp}
+                    maxLength={6}
+                    onChange={(e) => setOtp(e.target.value.replace(/\D/g, ''))}
+                    className="flex-1 px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-teal-500"
+                    placeholder="Enter 6-digit code"
+                  />
+                  <button
+                    type="button"
+                    onClick={handleVerifyOtp}
+                    disabled={loading}
+                    className="px-4 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 disabled:opacity-50 text-sm whitespace-nowrap"
+                  >
+                    Submit
+                  </button>
+                </div>
+                {errors.otp && <p className="text-red-600 text-xs mt-1">{errors.otp}</p>}
+                <p className="text-xs text-slate-500 mt-1">Check your email (and console in dev) for the code</p>
+              </div>
+            )}
             <div>
               <label className="block text-sm font-medium text-slate-700 mb-1">Password</label>
               <input

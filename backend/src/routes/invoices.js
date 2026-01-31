@@ -185,3 +185,49 @@ invoiceRoutes.patch('/:id/post', requireRole('VENDOR', 'ADMIN'), async (req, res
     res.status(500).json({ error: err.message });
   }
 });
+
+invoiceRoutes.get('/:id/pdf', async (req, res) => {
+  try {
+    const invoice = await prisma.invoice.findFirst({
+      where: {
+        id: req.params.id,
+        ...(req.user.role === 'CUSTOMER' ? { customerId: req.user.id } : {}),
+        ...(req.user.role === 'VENDOR' && req.user.vendor ? { vendorId: req.user.vendor.id } : {}),
+      },
+      include: {
+        order: { include: { items: { include: { product: true } } } },
+        vendor: true,
+        customer: true,
+      },
+    });
+    if (!invoice) return res.status(404).json({ error: 'Invoice not found' });
+
+    const { generateInvoicePDF } = await import('../utils/invoice-pdf.js');
+    const doc = generateInvoicePDF({
+      ...invoice,
+      subtotal: Number(invoice.subtotal),
+      taxAmount: Number(invoice.taxAmount),
+      discountAmount: Number(invoice.discountAmount),
+      securityDeposit: Number(invoice.securityDeposit),
+      lateFee: Number(invoice.lateFee),
+      totalAmount: Number(invoice.totalAmount),
+      amountPaid: Number(invoice.amountPaid),
+      order: {
+        ...invoice.order,
+        items: invoice.order.items.map((i) => ({
+          ...i,
+          unitPrice: Number(i.unitPrice),
+          lineTotal: Number(i.lineTotal),
+        })),
+      },
+    });
+
+    const pdfBuffer = Buffer.from(doc.output('arraybuffer'));
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', `attachment; filename=invoice-${invoice.invoiceNumber}.pdf`);
+    res.send(pdfBuffer);
+  } catch (err) {
+    console.error('PDF generation error:', err);
+    res.status(500).json({ error: err.message });
+  }
+});

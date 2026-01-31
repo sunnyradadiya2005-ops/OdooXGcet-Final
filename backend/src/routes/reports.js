@@ -115,3 +115,101 @@ reportRoutes.get('/vendor-earnings', requireRole('ADMIN'), async (req, res) => {
     res.status(500).json({ error: err.message });
   }
 });
+
+// Dashboard Metrics
+reportRoutes.get('/dashboard-metrics', async (req, res) => {
+  try {
+    const now = new Date();
+    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+    const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+
+    const where = req.user.role === 'VENDOR' && req.user.vendor
+      ? { vendorId: req.user.vendor.id }
+      : {};
+
+    // Total Revenue (this month)
+    const paymentsThisMonth = await prisma.payment.findMany({
+      where: {
+        status: 'COMPLETED',
+        paidAt: { gte: startOfMonth, lte: endOfMonth },
+        ...(req.user.role === 'VENDOR' && req.user.vendor ? { invoice: { vendorId: req.user.vendor.id } } : {}),
+      },
+    });
+    const totalRevenue = paymentsThisMonth.reduce((s, p) => s + Number(p.amount), 0);
+
+    // Total Orders (this month)
+    const ordersThisMonth = await prisma.rentalOrder.count({
+      where: {
+        ...where,
+        createdAt: { gte: startOfMonth, lte: endOfMonth },
+        status: { not: 'CANCELLED' },
+      },
+    });
+
+    // Active Rentals (currently picked up)
+    const activeRentals = await prisma.rentalOrder.count({
+      where: {
+        ...where,
+        status: 'PICKED_UP',
+      },
+    });
+
+    // Pending Returns (overdue)
+    const overdueOrders = await prisma.rentalOrder.findMany({
+      where: {
+        ...where,
+        status: 'PICKED_UP',
+      },
+      include: { items: true },
+    });
+
+    const pendingReturns = overdueOrders.filter(order => {
+      if (!order.items.length) return false;
+      const latestEndDate = new Date(Math.max(...order.items.map(i => new Date(i.endDate))));
+      return latestEndDate < now;
+    }).length;
+
+    // Revenue Chart (last 30 days)
+    const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+    const recentPayments = await prisma.payment.findMany({
+      where: {
+        status: 'COMPLETED',
+        paidAt: { gte: thirtyDaysAgo, lte: now },
+        ...(req.user.role === 'VENDOR' && req.user.vendor ? { invoice: { vendorId: req.user.vendor.id } } : {}),
+      },
+    });
+
+    const byDate = {};
+    recentPayments.forEach((p) => {
+      const d = p.paidAt.toISOString().split('T')[0];
+      byDate[d] = (byDate[d] || 0) + Number(p.amount);
+    });
+
+    const revenueChart = Object.entries(byDate)
+      .sort(([a], [b]) => a.localeCompare(b))
+      .map(([date, amount]) => ({ date, amount }));
+
+    // Status Distribution
+    const statusCounts = await prisma.rentalOrder.groupBy({
+      by: ['status'],
+      where,
+      _count: true,
+    });
+
+    const statusDistribution = {};
+    statusCounts.forEach(s => {
+      statusDistribution[s.status] = s._count;
+    });
+
+    res.json({
+      totalRevenue,
+      totalOrders: ordersThisMonth,
+      activeRentals,
+      pendingReturns,
+      revenueChart,
+      statusDistribution,
+    });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});

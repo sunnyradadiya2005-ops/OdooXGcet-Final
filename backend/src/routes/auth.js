@@ -4,7 +4,7 @@ import jwt from 'jsonwebtoken';
 import { body, validationResult } from 'express-validator';
 import crypto from 'crypto';
 import prisma from '../lib/prisma.js';
-import { sendPasswordResetEmail } from '../utils/email.js';
+import { sendPasswordResetEmail, sendOtpEmail } from '../utils/email.js';
 
 export const authRoutes = Router();
 
@@ -64,12 +64,74 @@ authRoutes.post(
   }
 );
 
+// Request a 6-digit OTP to verify email before registration
+authRoutes.post(
+  '/request-otp',
+  [body('email').isEmail().normalizeEmail()],
+  async (req, res) => {
+    try {
+      const errors = validationResult(req);
+      if (!errors.isEmpty()) {
+        return res.status(400).json({ errors: errors.array() });
+      }
+      const { email } = req.body;
+      const otp = Math.floor(100000 + Math.random() * 900000).toString();
+      const expiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
+      await prisma.emailVerification.create({
+        data: { email, otp, expiresAt },
+      });
+      try {
+        await sendOtpEmail(email, otp);
+      } catch (e) {
+        console.error('Failed to send OTP email:', e.message);
+      }
+      res.json({ message: 'OTP sent to email if it is deliverable' });
+    } catch (err) {
+      console.error('Request OTP error:', err);
+      res.status(500).json({ message: 'Failed to request OTP', error: err.message });
+    }
+  }
+);
+
+// Verify the OTP and return a short-lived verification token for registration
+authRoutes.post(
+  '/verify-otp',
+  [body('email').isEmail().normalizeEmail(), body('otp').isLength({ min: 6, max: 6 })],
+  async (req, res) => {
+    try {
+      const errors = validationResult(req);
+      if (!errors.isEmpty()) {
+        return res.status(400).json({ errors: errors.array() });
+      }
+      const { email, otp } = req.body;
+      const record = await prisma.emailVerification.findFirst({
+        where: { email, otp, expiresAt: { gt: new Date() }, verified: false },
+        orderBy: { createdAt: 'desc' },
+      });
+      if (!record) {
+        return res.status(400).json({ message: 'Invalid or expired OTP' });
+      }
+      const token = crypto.randomBytes(24).toString('hex');
+      const tokenExp = new Date(Date.now() + 15 * 60 * 1000); // 15 minutes
+      await prisma.emailVerification.update({
+        where: { id: record.id },
+        data: { verified: true, verifiedAt: new Date(), token, tokenExp },
+      });
+      res.json({ message: 'Email verified', verificationToken: token });
+    } catch (err) {
+      console.error('Verify OTP error:', err);
+      res.status(500).json({ message: 'Failed to verify OTP', error: err.message });
+    }
+  }
+);
+
 authRoutes.post(
   '/register/customer',
   [
     body('firstName').trim().notEmpty().withMessage('First name required'),
     body('lastName').trim().notEmpty().withMessage('Last name required'),
     body('email').isEmail().normalizeEmail(),
+    body('verificationToken').notEmpty().withMessage('Email verification required'),
     body('password')
       .isLength({ min: 6 })
       .withMessage('Password must be at least 6 characters')
@@ -83,15 +145,29 @@ authRoutes.post(
       if (!errors.isEmpty()) {
         return res.status(400).json({ errors: errors.array(), message: 'Validation failed' });
       }
-      const { firstName, lastName, email, password } = req.body;
+      const { firstName, lastName, email, password, verificationToken } = req.body;
       const existing = await prisma.user.findUnique({ where: { email } });
       if (existing) {
         return res.status(400).json({ message: 'Email already registered' });
+      }
+      // verify the OTP token exists and is valid
+      const ver = await prisma.emailVerification.findFirst({
+        where: {
+          email,
+          token: verificationToken,
+          tokenExp: { gt: new Date() },
+          verified: true,
+        },
+        orderBy: { createdAt: 'desc' },
+      });
+      if (!ver) {
+        return res.status(400).json({ message: 'Email not verified or verification token expired' });
       }
       const hash = await bcrypt.hash(password, 10);
       const user = await prisma.user.create({
         data: {
           email,
+          emailVerified: true,
           passwordHash: hash,
           firstName,
           lastName,
@@ -122,6 +198,7 @@ authRoutes.post(
     body('gstNumber').trim().notEmpty().withMessage('GST number required'),
     body('category').isIn(PRODUCT_CATEGORIES).withMessage('Invalid category'),
     body('email').isEmail().normalizeEmail(),
+    body('verificationToken').notEmpty().withMessage('Email verification required'),
     body('password')
       .isLength({ min: 6 })
       .withMessage('Password must be at least 6 characters')
@@ -135,15 +212,29 @@ authRoutes.post(
       if (!errors.isEmpty()) {
         return res.status(400).json({ errors: errors.array(), message: 'Validation failed' });
       }
-      const { firstName, lastName, companyName, gstNumber, category, email, password } = req.body;
+      const { firstName, lastName, companyName, gstNumber, category, email, password, verificationToken } = req.body;
       const existing = await prisma.user.findUnique({ where: { email } });
       if (existing) {
         return res.status(400).json({ message: 'Email already registered' });
+      }
+      // verify the OTP token exists and is valid
+      const ver = await prisma.emailVerification.findFirst({
+        where: {
+          email,
+          token: verificationToken,
+          tokenExp: { gt: new Date() },
+          verified: true,
+        },
+        orderBy: { createdAt: 'desc' },
+      });
+      if (!ver) {
+        return res.status(400).json({ message: 'Email not verified or verification token expired' });
       }
       const hash = await bcrypt.hash(password, 10);
       const user = await prisma.user.create({
         data: {
           email,
+          emailVerified: true,
           passwordHash: hash,
           firstName,
           lastName,

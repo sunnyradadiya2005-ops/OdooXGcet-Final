@@ -55,47 +55,48 @@ export default function ErpOrderDetail() {
   if (loading) return <ErpLayout><div className="animate-pulse h-64 bg-slate-200 rounded-xl" /></ErpLayout>;
   if (!order) return <ErpLayout><div className="text-slate-600">Order not found</div></ErpLayout>;
 
-  const canPickup = order.status === 'CONFIRMED';
-  const canReturn = order.status === 'PICKED_UP';
   const canCreateInvoice = ['PICKED_UP', 'RETURNED'].includes(order.status);
   const hasInvoice = order.invoices?.length > 0;
+  const isTerminalStatus = ['RETURNED', 'CANCELLED'].includes(order.status);
 
   return (
     <ErpLayout>
       <div className="flex justify-between items-start mb-6">
         <h1 className="text-2xl font-bold text-slate-800">Order #{order.orderNumber}</h1>
-        <div className="flex gap-2">
-          {order.status === 'QUOTATION' && (
-            <button onClick={() => handleStatus('RENTAL_ORDER')} className="px-4 py-2 border rounded-lg">
-              Convert to Order
-            </button>
-          )}
-          {order.status === 'RENTAL_ORDER' && (
-            <button onClick={() => handleStatus('CONFIRMED')} className="px-4 py-2 bg-teal-600 text-white rounded-lg">
-              Confirm
-            </button>
-          )}
-          {canPickup && (
-            <button onClick={handlePickup} className="px-4 py-2 bg-amber-600 text-white rounded-lg">
-              Confirm Pickup
-            </button>
-          )}
-          {canReturn && (
-            <button onClick={handleReturn} className="px-4 py-2 bg-green-600 text-white rounded-lg">
-              Confirm Return
-            </button>
-          )}
-          {canCreateInvoice && !hasInvoice && (
-            <button onClick={createInvoice} className="px-4 py-2 bg-teal-600 text-white rounded-lg">
-              Create Invoice
-            </button>
-          )}
-          {hasInvoice && (
-            <Link to={`/erp/invoices/${order.invoices[0].id}`} className="px-4 py-2 border rounded-lg">
-              View Invoice
-            </Link>
-          )}
-        </div>
+        {!isTerminalStatus && (
+          <div className="flex gap-2">
+            {order.status === 'QUOTATION' && (
+              <button onClick={() => handleStatus('RENTAL_ORDER')} className="px-4 py-2 border rounded-lg hover:bg-slate-50">
+                Convert to Order
+              </button>
+            )}
+            {order.status === 'RENTAL_ORDER' && (
+              <button onClick={() => handleStatus('CONFIRMED')} className="px-4 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700">
+                Confirm
+              </button>
+            )}
+            {order.status === 'CONFIRMED' && (
+              <button onClick={handlePickup} className="px-4 py-2 bg-amber-600 text-white rounded-lg hover:bg-amber-700">
+                Confirm Pickup
+              </button>
+            )}
+            {order.status === 'PICKED_UP' && (
+              <button onClick={handleReturn} className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700">
+                Confirm Return
+              </button>
+            )}
+          </div>
+        )}
+        {canCreateInvoice && !hasInvoice && (
+          <button onClick={createInvoice} className="px-4 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700">
+            Create Invoice
+          </button>
+        )}
+        {hasInvoice && (
+          <Link to={`/erp/invoices/${order.invoices[0].id}`} className="px-4 py-2 border rounded-lg hover:bg-slate-50">
+            View Invoice
+          </Link>
+        )}
       </div>
 
       <div className="grid md:grid-cols-2 gap-6">
@@ -112,6 +113,48 @@ export default function ErpOrderDetail() {
           </p>
         </div>
       </div>
+
+      {/* Pickup & Return Status */}
+      {(order.pickups?.length > 0 || order.returns?.length > 0) && (
+        <div className="grid md:grid-cols-2 gap-6 mt-6">
+          {order.pickups?.length > 0 && (
+            <div className="bg-amber-50 rounded-xl border border-amber-200 p-6">
+              <h3 className="font-semibold text-amber-900 mb-2 flex items-center gap-2">
+                ✓ Pickup Confirmed
+              </h3>
+              <p className="text-amber-700 text-sm">
+                {new Date(order.pickups[0].pickedAt).toLocaleString()}
+              </p>
+              {order.pickups[0].notes && (
+                <p className="text-amber-600 text-xs mt-2">Note: {order.pickups[0].notes}</p>
+              )}
+            </div>
+          )}
+          {order.returns?.length > 0 && (
+            <div className="bg-green-50 rounded-xl border border-green-200 p-6">
+              <h3 className="font-semibold text-green-900 mb-2 flex items-center gap-2">
+                ✓ Return Completed
+              </h3>
+              <p className="text-green-700 text-sm">
+                {new Date(order.returns[0].returnedAt).toLocaleString()}
+              </p>
+              {Number(order.returns[0].lateFee) > 0 && (
+                <p className="text-red-600 text-sm mt-2 font-medium">
+                  Late Fee: ₹{Number(order.returns[0].lateFee).toFixed(2)}
+                </p>
+              )}
+              {Number(order.returns[0].damageFee) > 0 && (
+                <p className="text-red-600 text-sm mt-1 font-medium">
+                  Damage Fee: ₹{Number(order.returns[0].damageFee).toFixed(2)}
+                </p>
+              )}
+              {order.returns[0].notes && (
+                <p className="text-green-600 text-xs mt-2">Note: {order.returns[0].notes}</p>
+              )}
+            </div>
+          )}
+        </div>
+      )}
 
       <div className="mt-6 bg-white rounded-xl border border-slate-200 p-6">
         <h3 className="font-semibold text-slate-800 mb-4">Order Lines</h3>
