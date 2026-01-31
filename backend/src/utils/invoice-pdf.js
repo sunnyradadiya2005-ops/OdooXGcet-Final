@@ -21,12 +21,32 @@ export function generateInvoicePDF(invoice) {
     doc.text(invoice.vendor?.companyName || 'N/A', 20, 51);
     doc.text(`GST: ${invoice.vendor?.gstNumber || 'N/A'}`, 20, 57);
 
-    // Customer Info
+    // Billing Address
     doc.setFont(undefined, 'bold');
     doc.text('Bill To:', 20, 70);
     doc.setFont(undefined, 'normal');
-    doc.text(`${invoice.customer?.firstName} ${invoice.customer?.lastName}`, 20, 76);
-    doc.text(invoice.customer?.email || '', 20, 82);
+    const billing = invoice.billingAddress;
+    if (billing && typeof billing === 'object') {
+        doc.text(billing.name || `${invoice.customer?.firstName} ${invoice.customer?.lastName}`, 20, 76);
+        doc.text(billing.line1 || '', 20, 82);
+        doc.text(`${billing.city || ''} ${billing.zip || ''}`, 20, 88);
+        doc.text(billing.country || '', 20, 94);
+    } else {
+        doc.text(`${invoice.customer?.firstName} ${invoice.customer?.lastName}`, 20, 76);
+        doc.text(invoice.customer?.email || '', 20, 82);
+    }
+
+    // Shipping Address
+    doc.setFont(undefined, 'bold');
+    doc.text('Ship To:', 80, 70);
+    doc.setFont(undefined, 'normal');
+    const shipping = invoice.shippingAddress;
+    if (shipping && typeof shipping === 'object') {
+        doc.text(shipping.name || '', 80, 76);
+        doc.text(shipping.line1 || '', 80, 82);
+        doc.text(`${shipping.city || ''} ${shipping.zip || ''}`, 80, 88);
+        doc.text(shipping.country || '', 80, 94);
+    }
 
     // Invoice Details (Right side)
     doc.setFont(undefined, 'bold');
@@ -58,7 +78,7 @@ export function generateInvoicePDF(invoice) {
     ]);
 
     doc.autoTable({
-        startY: 95,
+        startY: 110,
         head: [['Product', 'Qty', 'Rental Period', 'Amount']],
         body: tableData,
         theme: 'striped',

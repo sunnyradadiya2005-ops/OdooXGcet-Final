@@ -118,179 +118,213 @@ export default function RegisterVendor() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-slate-50 px-4 py-12">
-      <div className="w-full max-w-md">
-        <div className="text-center mb-8">
-          <Link to="/" className="text-2xl font-bold text-teal-600">
-            KirayaKart
-          </Link>
-          <p className="text-slate-600 mt-1">Vendor Signup</p>
-        </div>
-        <div className="bg-white rounded-xl shadow-lg p-8">
-          <h1 className="text-xl font-semibold text-slate-800 mb-6">Become a Vendor</h1>
+    <div className="min-h-screen flex items-center justify-center bg-teal-600 px-4 py-6">
+      <div className="w-full max-w-3xl">
+        <div className="bg-white rounded-xl shadow-xl border border-slate-200 p-6">
+          {/* Logo inside card */}
+          <div className="text-center mb-4">
+            <Link to="/" className="text-2xl font-bold text-teal-600 hover:text-teal-700 transition-colors">
+              KirayaKart
+            </Link>
+            <p className="text-xs text-slate-500 mt-1">Vendor Registration</p>
+          </div>
+
+          <h1 className="text-lg font-bold text-slate-900 mb-1 text-center">Register as a Vendor</h1>
+          <p className="text-sm text-slate-600 mb-4 text-center">Manage rentals, inventory, and invoices</p>
+
           <form onSubmit={handleSubmit} className="space-y-4">
             {errors.form && (
-              <div className="p-3 bg-red-50 text-red-700 text-sm rounded-lg">{errors.form}</div>
+              <div className="p-3 bg-red-50 border border-red-200 text-red-700 text-sm rounded-lg">{errors.form}</div>
             )}
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">First Name</label>
-                <input
-                  type="text"
-                  value={form.firstName}
-                  onChange={(e) => setForm({ ...form, firstName: e.target.value })}
-                  className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-teal-500"
-                />
-                {errors.firstName && <p className="text-red-600 text-xs mt-1">{errors.firstName}</p>}
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">Last Name</label>
-                <input
-                  type="text"
-                  value={form.lastName}
-                  onChange={(e) => setForm({ ...form, lastName: e.target.value })}
-                  className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-teal-500"
-                />
-                {errors.lastName && <p className="text-red-600 text-xs mt-1">{errors.lastName}</p>}
-              </div>
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1">Company Name</label>
-              <input
-                type="text"
-                value={form.companyName}
-                onChange={(e) => setForm({ ...form, companyName: e.target.value })}
-                className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-teal-500"
-              />
-              {errors.companyName && (
-                <p className="text-red-600 text-xs mt-1">{errors.companyName}</p>
-              )}
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1">GST Number</label>
-              <input
-                type="text"
-                value={form.gstNumber}
-                onChange={(e) => setForm({ ...form, gstNumber: e.target.value })}
-                className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-teal-500"
-                placeholder="29AABCT1234F1Z5"
-              />
-              {errors.gstNumber && <p className="text-red-600 text-xs mt-1">{errors.gstNumber}</p>}
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1">
-                Product Category
-              </label>
-              <select
-                value={form.category}
-                onChange={(e) => setForm({ ...form, category: e.target.value })}
-                className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-teal-500"
-              >
-                <option value="">Select category</option>
-                {CATEGORIES.map((c) => (
-                  <option key={c} value={c}>
-                    {c}
-                  </option>
-                ))}
-              </select>
-              {errors.category && <p className="text-red-600 text-xs mt-1">{errors.category}</p>}
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1">Email</label>
-              <div className="flex gap-2">
-                <input
-                  type="email"
-                  value={form.email}
-                  onChange={(e) => setForm({ ...form, email: e.target.value })}
-                  disabled={isVerified}
-                  className="flex-1 px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-teal-500 disabled:bg-slate-100"
-                />
-                {!isVerified && !otpSent && (
-                  <button
-                    type="button"
-                    onClick={handleVerifyEmail}
-                    disabled={loading}
-                    className="px-4 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 disabled:opacity-50 whitespace-nowrap"
-                  >
-                    Send OTP
-                  </button>
-                )}
-                {isVerified && (
-                  <span className="flex items-center px-3 text-green-600 text-sm font-medium">
-                    ✓ Verified
-                  </span>
-                )}
-              </div>
-              {errors.email && <p className="text-red-600 text-xs mt-1">{errors.email}</p>}
-            </div>
 
-            {otpSent && !isVerified && (
-              <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">Enter OTP</label>
-                <div className="flex gap-2">
+            {/* Personal Information Section */}
+            <div className="space-y-3">
+              <h2 className="text-xs font-semibold text-slate-900 uppercase tracking-wide pb-1.5 border-b border-slate-200">
+                Personal Information
+              </h2>
+              <div className="grid grid-cols-3 gap-3">
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-1.5">First Name</label>
                   <input
                     type="text"
-                    value={otp}
-                    onChange={(e) => setOtp(e.target.value)}
-                    placeholder="6-digit code"
-                    className="flex-1 px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-teal-500"
+                    value={form.firstName}
+                    onChange={(e) => setForm({ ...form, firstName: e.target.value })}
+                    className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent"
                   />
-                  <button
-                    type="button"
-                    onClick={handleVerifyOtp}
-                    disabled={loading}
-                    className="px-4 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 disabled:opacity-50"
-                  >
-                    Verify
-                  </button>
+                  {errors.firstName && <p className="text-red-600 text-xs mt-1">{errors.firstName}</p>}
                 </div>
-                {errors.otp && <p className="text-red-600 text-xs mt-1">{errors.otp}</p>}
-                <p className="text-xs text-slate-500 mt-1">Check your email for the verification code</p>
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-1.5">Last Name</label>
+                  <input
+                    type="text"
+                    value={form.lastName}
+                    onChange={(e) => setForm({ ...form, lastName: e.target.value })}
+                    className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent"
+                  />
+                  {errors.lastName && <p className="text-red-600 text-xs mt-1">{errors.lastName}</p>}
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-1.5">Email</label>
+                  <div className="flex gap-2">
+                    <input
+                      type="email"
+                      value={form.email}
+                      onChange={(e) => setForm({ ...form, email: e.target.value })}
+                      disabled={isVerified}
+                      className="flex-1 px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent disabled:bg-slate-100 text-sm"
+                    />
+                    {!isVerified && !otpSent && (
+                      <button
+                        type="button"
+                        onClick={handleVerifyEmail}
+                        disabled={loading}
+                        className="px-3 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 disabled:opacity-50 disabled:cursor-not-allowed text-xs font-medium whitespace-nowrap transition-colors"
+                      >
+                        Verify
+                      </button>
+                    )}
+                    {isVerified && (
+                      <span className="flex items-center px-2 text-green-600 text-xs font-medium">
+                        ✓
+                      </span>
+                    )}
+                  </div>
+                  {errors.email && <p className="text-red-600 text-xs mt-1">{errors.email}</p>}
+                </div>
               </div>
-            )}
-            <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1">Password</label>
-              <input
-                type="password"
-                value={form.password}
-                onChange={(e) => setForm({ ...form, password: e.target.value })}
-                className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-teal-500"
-              />
-              {errors.password && <p className="text-red-600 text-xs mt-1">{errors.password}</p>}
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1">
-                Confirm Password
-              </label>
-              <input
-                type="password"
-                value={form.confirmPassword}
-                onChange={(e) => setForm({ ...form, confirmPassword: e.target.value })}
-                className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-teal-500"
-              />
-              {errors.confirmPassword && (
-                <p className="text-red-600 text-xs mt-1">{errors.confirmPassword}</p>
+
+              {otpSent && !isVerified && (
+                <div className="p-3 bg-slate-50 rounded-lg border border-slate-200">
+                  <label className="block text-sm font-medium text-slate-700 mb-1.5">Verification Code</label>
+                  <div className="flex gap-2">
+                    <input
+                      type="text"
+                      value={otp}
+                      maxLength={6}
+                      onChange={(e) => setOtp(e.target.value.replace(/\D/g, ''))}
+                      placeholder="6-digit code"
+                      className="flex-1 px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent"
+                    />
+                    <button
+                      type="button"
+                      onClick={handleVerifyOtp}
+                      disabled={loading}
+                      className="px-4 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 disabled:opacity-50 disabled:cursor-not-allowed text-sm font-medium transition-colors"
+                    >
+                      Submit
+                    </button>
+                  </div>
+                  {errors.otp && <p className="text-red-600 text-xs mt-1">{errors.otp}</p>}
+                  <p className="text-xs text-slate-500 mt-1">Check your email for the code</p>
+                </div>
               )}
             </div>
+
+            {/* Business Information Section */}
+            <div className="space-y-3">
+              <h2 className="text-xs font-semibold text-slate-900 uppercase tracking-wide pb-1.5 border-b border-slate-200">
+                Business Information
+              </h2>
+              <div className="grid grid-cols-3 gap-3">
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-1.5">Company Name</label>
+                  <input
+                    type="text"
+                    value={form.companyName}
+                    onChange={(e) => setForm({ ...form, companyName: e.target.value })}
+                    className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent"
+                  />
+                  {errors.companyName && (
+                    <p className="text-red-600 text-xs mt-1">{errors.companyName}</p>
+                  )}
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-1.5">GST Number</label>
+                  <input
+                    type="text"
+                    value={form.gstNumber}
+                    onChange={(e) => setForm({ ...form, gstNumber: e.target.value })}
+                    className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent"
+                    placeholder="29AABCT1234F1Z5"
+                  />
+                  {errors.gstNumber && <p className="text-red-600 text-xs mt-1">{errors.gstNumber}</p>}
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-1.5">
+                    Product Category
+                  </label>
+                  <select
+                    value={form.category}
+                    onChange={(e) => setForm({ ...form, category: e.target.value })}
+                    className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent"
+                  >
+                    <option value="">Select category</option>
+                    {CATEGORIES.map((c) => (
+                      <option key={c} value={c}>
+                        {c}
+                      </option>
+                    ))}
+                  </select>
+                  {errors.category && <p className="text-red-600 text-xs mt-1">{errors.category}</p>}
+                </div>
+              </div>
+            </div>
+
+            {/* Security Section */}
+            <div className="space-y-3">
+              <h2 className="text-xs font-semibold text-slate-900 uppercase tracking-wide pb-1.5 border-b border-slate-200">
+                Security
+              </h2>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-1.5">Password</label>
+                  <input
+                    type="password"
+                    value={form.password}
+                    onChange={(e) => setForm({ ...form, password: e.target.value })}
+                    className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent"
+                  />
+                  {errors.password && <p className="text-red-600 text-xs mt-1">{errors.password}</p>}
+                  <p className="text-xs text-slate-500 mt-1">Min 6 chars, include a number</p>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-1.5">
+                    Confirm Password
+                  </label>
+                  <input
+                    type="password"
+                    value={form.confirmPassword}
+                    onChange={(e) => setForm({ ...form, confirmPassword: e.target.value })}
+                    className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent"
+                  />
+                  {errors.confirmPassword && (
+                    <p className="text-red-600 text-xs mt-1">{errors.confirmPassword}</p>
+                  )}
+                </div>
+              </div>
+            </div>
+
             <button
               type="submit"
               disabled={loading}
-              className="w-full py-3 bg-teal-600 text-white font-medium rounded-lg hover:bg-teal-700 disabled:opacity-50"
+              className="w-full py-2.5 bg-teal-600 text-white font-semibold rounded-lg hover:bg-teal-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
             >
               {loading ? 'Creating account...' : 'Register as Vendor'}
             </button>
           </form>
-          <p className="mt-6 text-center text-slate-600 text-sm">
-            Already have an account?{' '}
-            <Link to="/login" className="text-teal-600 font-medium hover:underline">
-              Login
-            </Link>
-          </p>
-          <p className="mt-2 text-center text-slate-600 text-sm">
-            <Link to="/register" className="text-teal-600 font-medium hover:underline">
-              Register as Customer
-            </Link>
-          </p>
+          <div className="mt-5 pt-4 border-t border-slate-200">
+            <p className="text-center text-sm text-slate-600">
+              Already have an account?{' '}
+              <Link to="/login" className="text-teal-600 font-semibold hover:text-teal-700 transition-colors">
+                Sign In
+              </Link>
+            </p>
+            <p className="text-center text-sm text-slate-600 mt-2">
+              <Link to="/register" className="text-teal-600 font-semibold hover:text-teal-700 transition-colors">
+                Register as Customer instead
+              </Link>
+            </p>
+          </div>
         </div>
       </div>
     </div>

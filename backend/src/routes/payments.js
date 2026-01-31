@@ -55,6 +55,7 @@ paymentRoutes.post('/verify', authenticate, async (req, res) => {
           id: invoiceId,
           ...(req.user.role === 'CUSTOMER' ? { customerId: req.user.id } : {}),
         },
+        include: { order: { include: { items: true } } }, // Fetch order items to clear cart
       });
       if (invoice) {
         const paidAmount = new Decimal(amount || 0).div(100);
@@ -79,6 +80,20 @@ paymentRoutes.post('/verify', authenticate, async (req, res) => {
           where: { id: invoiceId },
           data: { amountPaid: newAmountPaid, status: newStatus },
         });
+
+        // Remove items from cart now that payment is verified
+        if (newStatus === 'PAID' && invoice.order?.items?.length) {
+          try {
+            await prisma.cartItem.deleteMany({
+              where: {
+                userId: invoice.customerId,
+                productId: { in: invoice.order.items.map(i => i.productId) }
+              }
+            });
+          } catch (e) {
+            console.error('Failed to clear cart after payment:', e);
+          }
+        }
       }
     }
 

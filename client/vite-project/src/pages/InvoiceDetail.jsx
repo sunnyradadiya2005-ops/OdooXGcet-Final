@@ -81,14 +81,40 @@ export default function InvoiceDetail() {
             <div className="mb-4">
                 <span
                     className={`inline-block px-3 py-1 rounded-full text-sm font-medium ${invoice.status === 'PAID'
-                            ? 'bg-green-100 text-green-800'
-                            : invoice.status === 'DRAFT'
-                                ? 'bg-slate-100 text-slate-800'
-                                : 'bg-amber-100 text-amber-800'
+                        ? 'bg-green-100 text-green-800'
+                        : invoice.status === 'DRAFT'
+                            ? 'bg-slate-100 text-slate-800'
+                            : 'bg-amber-100 text-amber-800'
                         }`}
                 >
                     {invoice.status.replace('_', ' ')}
                 </span>
+            </div>
+
+            <div className="grid md:grid-cols-2 gap-6 mb-6">
+                <div className="bg-white rounded-xl border border-slate-200 p-6">
+                    <h3 className="font-semibold text-slate-800 mb-4">Bill To</h3>
+                    <p className="font-medium text-slate-800">{invoice.customer?.firstName} {invoice.customer?.lastName}</p>
+                    <p className="text-slate-600 text-sm mb-2">{invoice.customer?.email}</p>
+                    {invoice.billingAddress ? (
+                        <div className="text-sm text-slate-600 mt-2 pt-2 border-t">
+                            <p>{invoice.billingAddress.line1}</p>
+                            <p>{invoice.billingAddress.city}, {invoice.billingAddress.zip}</p>
+                            <p>{invoice.billingAddress.country}</p>
+                        </div>
+                    ) : <p className="text-sm text-slate-500 mt-2">No billing address</p>}
+                </div>
+                <div className="bg-white rounded-xl border border-slate-200 p-6">
+                    <h3 className="font-semibold text-slate-800 mb-4">Ship To</h3>
+                    {invoice.shippingAddress ? (
+                        <div className="text-sm text-slate-600">
+                            <p className="font-medium text-slate-800">{invoice.shippingAddress.name}</p>
+                            <p>{invoice.shippingAddress.line1}</p>
+                            <p>{invoice.shippingAddress.city}, {invoice.shippingAddress.zip}</p>
+                            <p>{invoice.shippingAddress.country}</p>
+                        </div>
+                    ) : <p className="text-sm text-slate-500">Same as billing</p>}
+                </div>
             </div>
 
             <div className="grid md:grid-cols-2 gap-6 mb-6">
@@ -160,14 +186,16 @@ export default function InvoiceDetail() {
                 </div>
             </div>
 
-            {canPay && (
-                <Link
-                    to={`/orders/${invoice.order?.id}/checkout`}
-                    className="block w-full py-3 bg-teal-600 text-white text-center rounded-lg hover:bg-teal-700"
-                >
-                    Pay Now (₹{remaining.toFixed(2)})
-                </Link>
-            )}
-        </div>
+            {
+                canPay && (
+                    <Link
+                        to={`/orders/${invoice.order?.id}/checkout`}
+                        className="block w-full py-3 bg-teal-600 text-white text-center rounded-lg hover:bg-teal-700"
+                    >
+                        Pay Now (₹{remaining.toFixed(2)})
+                    </Link>
+                )
+            }
+        </div >
     );
 }

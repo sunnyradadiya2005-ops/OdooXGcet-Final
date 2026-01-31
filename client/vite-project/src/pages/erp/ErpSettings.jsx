@@ -158,15 +158,15 @@ export default function ErpSettings() {
 
   return (
     <ErpLayout>
-      <h1 className="text-2xl font-bold text-slate-800 mb-6">Settings</h1>
+      <h1 className="text-3xl font-bold text-slate-900 mb-8">Settings</h1>
 
       {/* Tabs */}
-      <div className="flex gap-2 mb-6 border-b border-slate-200">
+      <div className="flex gap-1 mb-8 border-b border-slate-200">
         <button
           onClick={() => setActiveTab('profile')}
-          className={`px-4 py-2 font-medium ${activeTab === 'profile'
+          className={`px-6 py-3 font-medium transition-colors ${activeTab === 'profile'
               ? 'text-teal-600 border-b-2 border-teal-600'
-              : 'text-slate-600 hover:text-slate-800'
+              : 'text-slate-600 hover:text-slate-900'
             }`}
         >
           Profile
@@ -175,18 +175,18 @@ export default function ErpSettings() {
           <>
             <button
               onClick={() => setActiveTab('system')}
-              className={`px-4 py-2 font-medium ${activeTab === 'system'
+              className={`px-6 py-3 font-medium transition-colors ${activeTab === 'system'
                   ? 'text-teal-600 border-b-2 border-teal-600'
-                  : 'text-slate-600 hover:text-slate-800'
+                  : 'text-slate-600 hover:text-slate-900'
                 }`}
             >
               System Settings
             </button>
             <button
               onClick={() => setActiveTab('company')}
-              className={`px-4 py-2 font-medium ${activeTab === 'company'
+              className={`px-6 py-3 font-medium transition-colors ${activeTab === 'company'
                   ? 'text-teal-600 border-b-2 border-teal-600'
-                  : 'text-slate-600 hover:text-slate-800'
+                  : 'text-slate-600 hover:text-slate-900'
                 }`}
             >
               Company Details
@@ -199,8 +199,8 @@ export default function ErpSettings() {
       {message && (
         <div
           className={`mb-4 p-4 rounded-lg ${message.startsWith('Error')
-              ? 'bg-red-50 text-red-800 border border-red-200'
-              : 'bg-green-50 text-green-800 border border-green-200'
+            ? 'bg-red-50 text-red-800 border border-red-200'
+            : 'bg-green-50 text-green-800 border border-green-200'
             }`}
         >
           {message}

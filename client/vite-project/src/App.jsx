@@ -2,6 +2,9 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import Header from './components/Header';
 
+// Landing Page
+import LandingPage from './pages/LandingPage';
+
 // Auth pages
 import Login from './pages/Login';
 import Register from './pages/Register';
@@ -20,6 +23,7 @@ import OrderCheckout from './pages/OrderCheckout';
 import OrderConfirmation from './pages/OrderConfirmation';
 import Invoices from './pages/Invoices';
 import InvoiceDetail from './pages/InvoiceDetail';
+import Profile from './pages/Profile';
 import Terms from './pages/Terms';
 import About from './pages/About';
 import Contact from './pages/Contact';
@@ -50,14 +54,19 @@ export default function App() {
     <BrowserRouter>
       <AuthProvider>
         <Routes>
+          {/* Public Landing Page */}
+          <Route path="/" element={<LandingPage />} />
+
+          {/* Auth Routes */}
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
           <Route path="/register/vendor" element={<RegisterVendor />} />
           <Route path="/forgot-password" element={<ForgotPassword />} />
           <Route path="/reset-password" element={<ResetPassword />} />
 
+          {/* Customer Routes - Product Listing moved to /shop */}
           <Route
-            path="/"
+            path="/shop"
             element={
               <CustomerLayout>
                 <Home />
@@ -97,6 +106,7 @@ export default function App() {
           />
           <Route path="/invoices" element={<CustomerLayout><Invoices /></CustomerLayout>} />
           <Route path="/invoices/:id" element={<CustomerLayout><InvoiceDetail /></CustomerLayout>} />
+          <Route path="/profile" element={<CustomerLayout><Profile /></CustomerLayout>} />
           <Route
             path="/terms"
             element={
@@ -122,6 +132,7 @@ export default function App() {
             }
           />
 
+          {/* ERP Routes */}
           <Route path="/erp" element={<ErpDashboard />} />
           <Route path="/erp/orders/new" element={<ErpNewOrder />} />
           <Route path="/erp/orders/:id" element={<ErpOrderDetail />} />
@@ -134,6 +145,7 @@ export default function App() {
           <Route path="/erp/reports" element={<ErpReports />} />
           <Route path="/erp/settings" element={<ErpSettings />} />
 
+          {/* Catch-all redirect */}
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </AuthProvider>

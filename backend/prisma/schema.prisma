@@ -283,6 +283,7 @@ model RentalOrder {
   securityDeposit Decimal     @default(0) @map("security_deposit") @db.Decimal(12, 2)
   deliveryMethod  String      @default("standard") @map("delivery_method") // standard, pickup
   deliveryAddress Json?       @map("delivery_address")
+  billingAddress  Json?       @map("billing_address")
   notes           String?
   confirmedAt     DateTime?   @map("confirmed_at")
   createdAt       DateTime    @default(now()) @map("created_at")
@@ -379,6 +380,8 @@ model Invoice {
   totalAmount     Decimal       @default(0) @map("total_amount") @db.Decimal(12, 2)
   amountPaid      Decimal       @default(0) @map("amount_paid") @db.Decimal(12, 2)
   postedAt        DateTime?     @map("posted_at")
+  billingAddress  Json?         @map("billing_address")
+  shippingAddress Json?         @map("shipping_address")
   createdAt       DateTime      @default(now()) @map("created_at")
   updatedAt       DateTime      @updatedAt @map("updated_at")
 

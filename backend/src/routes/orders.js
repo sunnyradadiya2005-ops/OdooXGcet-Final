@@ -64,6 +64,19 @@ orderRoutes.get('/', async (req, res) => {
       ];
     }
 
+    // Hide unpaid RENTAL_ORDERs for customers (drafts)
+    if (role === 'CUSTOMER' && !status) {
+      where.OR = [
+        { status: { in: ['CONFIRMED', 'PICKED_UP', 'RETURNED', 'CANCELLED'] } },
+        {
+          status: 'RENTAL_ORDER',
+          invoices: {
+            some: { status: { in: ['PAID', 'PARTIALLY_PAID'] } }
+          }
+        }
+      ];
+    }
+
     const [orders, total] = await Promise.all([
       prisma.rentalOrder.findMany({
         where,
@@ -167,7 +180,7 @@ orderRoutes.get('/:id', async (req, res) => {
 
 orderRoutes.post('/from-cart', requireRole('CUSTOMER'), async (req, res) => {
   try {
-    const { deliveryMethod, deliveryAddress, couponCode } = req.body;
+    const { deliveryMethod, deliveryAddress, billingAddress, couponCode } = req.body;
 
     const cartItems = await prisma.cartItem.findMany({
       where: { userId: req.user.id },
@@ -245,17 +258,21 @@ orderRoutes.post('/from-cart', requireRole('CUSTOMER'), async (req, res) => {
           totalAmount,
           deliveryMethod: deliveryMethod || 'standard',
           deliveryAddress: deliveryAddress || null,
+          billingAddress: billingAddress || null,
           items: { create: orderItems },
         },
         include: { items: true, vendor: true, customer: true },
       });
 
+      /* 
+      // Don't delete cart items yet - wait for payment success
       await prisma.cartItem.deleteMany({
         where: {
           userId: req.user.id,
           productId: { in: items.map((i) => i.productId) },
         },
       });
+      */
 
       orders.push(order);
     }

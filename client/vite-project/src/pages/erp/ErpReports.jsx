@@ -35,34 +35,42 @@ export default function ErpReports() {
 
   return (
     <ErpLayout>
-      <h1 className="text-2xl font-bold text-slate-800 mb-6">Reports</h1>
+      <h1 className="text-3xl font-bold text-slate-900 mb-8">Reports & Analytics</h1>
 
-      <div className="flex gap-4 mb-6">
-        <input
-          type="date"
-          value={startDate}
-          onChange={(e) => setStartDate(e.target.value)}
-          className="px-4 py-2 border rounded-lg"
-        />
-        <input
-          type="date"
-          value={endDate}
-          onChange={(e) => setEndDate(e.target.value)}
-          className="px-4 py-2 border rounded-lg"
-        />
-        <div className="flex gap-2 ml-auto">
+      <div className="flex gap-4 mb-8">
+        <div className="flex gap-3 flex-1">
+          <div>
+            <label className="block text-sm font-medium text-slate-700 mb-2">Start Date</label>
+            <input
+              type="date"
+              value={startDate}
+              onChange={(e) => setStartDate(e.target.value)}
+              className="px-4 py-2.5 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-slate-700 mb-2">End Date</label>
+            <input
+              type="date"
+              value={endDate}
+              onChange={(e) => setEndDate(e.target.value)}
+              className="px-4 py-2.5 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent"
+            />
+          </div>
+        </div>
+        <div className="flex gap-3 items-end">
           <a
             href={`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/exports/revenue/pdf?startDate=${startDate}&endDate=${endDate}`}
             target="_blank"
             rel="noopener noreferrer"
-            className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 text-sm"
+            className="px-6 py-2.5 bg-red-600 text-white rounded-lg hover:bg-red-700 text-sm font-medium transition-colors"
           >
             📄 Export PDF
           </a>
           <a
             href={`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/exports/revenue/csv?startDate=${startDate}&endDate=${endDate}`}
             download
-            className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 text-sm"
+            className="px-6 py-2.5 bg-green-600 text-white rounded-lg hover:bg-green-700 text-sm font-medium transition-colors"
           >
             📊 Export CSV
           </a>
@@ -70,12 +78,12 @@ export default function ErpReports() {
       </div>
 
       {loading ? (
-        <div className="animate-pulse h-64 bg-slate-200 rounded-xl" />
+        <div className="animate-pulse h-64 bg-slate-100 rounded-xl" />
       ) : (
-        <div className="space-y-6">
-          <div className="bg-white rounded-xl border border-slate-200 p-6">
-            <h2 className="font-semibold text-slate-800 mb-4">Total Revenue</h2>
-            <p className="text-3xl font-bold text-teal-600">
+        <div className="space-y-8">
+          <div className="bg-white rounded-xl border border-slate-200 p-8 shadow-sm">
+            <h2 className="text-xl font-semibold text-slate-900 mb-4">Total Revenue</h2>
+            <p className="text-4xl font-bold text-teal-600">
               ₹{revenue.totalRevenue?.toFixed(2) || '0.00'}
             </p>
             {revenue.chartData?.length > 0 && (

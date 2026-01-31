@@ -81,46 +81,56 @@ export default function ErpDashboard() {
     <ErpLayout>
       {/* Metrics Cards */}
       {metrics && (
-        <div className="grid grid-cols-4 gap-4 mb-6">
-          <div className="bg-white rounded-xl border border-slate-200 p-4">
-            <p className="text-sm text-slate-600 mb-1">Total Revenue (This Month)</p>
-            <p className="text-2xl font-bold text-teal-600">₹{metrics.totalRevenue.toFixed(2)}</p>
+        <div className="grid grid-cols-4 gap-6 mb-8">
+          <div className="bg-white rounded-xl border border-slate-200 p-6 shadow-sm">
+            <p className="text-sm font-medium text-slate-600 mb-2">Total Revenue</p>
+            <p className="text-3xl font-bold text-teal-600">₹{metrics.totalRevenue.toFixed(2)}</p>
+            <p className="text-xs text-slate-500 mt-1">This month</p>
           </div>
-          <div className="bg-white rounded-xl border border-slate-200 p-4">
-            <p className="text-sm text-slate-600 mb-1">Total Orders (This Month)</p>
-            <p className="text-2xl font-bold text-slate-800">{metrics.totalOrders}</p>
+          <div className="bg-white rounded-xl border border-slate-200 p-6 shadow-sm">
+            <p className="text-sm font-medium text-slate-600 mb-2">Total Orders</p>
+            <p className="text-3xl font-bold text-slate-900">{metrics.totalOrders}</p>
+            <p className="text-xs text-slate-500 mt-1">This month</p>
           </div>
-          <div className="bg-white rounded-xl border border-slate-200 p-4">
-            <p className="text-sm text-slate-600 mb-1">Active Rentals</p>
-            <p className="text-2xl font-bold text-amber-600">{metrics.activeRentals}</p>
+          <div className="bg-white rounded-xl border border-slate-200 p-6 shadow-sm">
+            <p className="text-sm font-medium text-slate-600 mb-2">Active Rentals</p>
+            <p className="text-3xl font-bold text-amber-600">{metrics.activeRentals}</p>
+            <p className="text-xs text-slate-500 mt-1">Currently rented</p>
           </div>
-          <div className="bg-white rounded-xl border border-slate-200 p-4">
-            <p className="text-sm text-slate-600 mb-1">Pending Returns</p>
-            <p className="text-2xl font-bold text-red-600">{metrics.pendingReturns}</p>
+          <div className="bg-white rounded-xl border border-slate-200 p-6 shadow-sm">
+            <p className="text-sm font-medium text-slate-600 mb-2">Pending Returns</p>
+            <p className="text-3xl font-bold text-red-600">{metrics.pendingReturns}</p>
+            <p className="text-xs text-slate-500 mt-1">Overdue</p>
           </div>
         </div>
       )}
 
-      <div className="flex justify-between items-center mb-6">
-        <h1 className="text-2xl font-bold text-slate-800">Orders</h1>
-        <div className="flex gap-4">
+      <div className="flex justify-between items-center mb-8">
+        <h1 className="text-3xl font-bold text-slate-900">Orders</h1>
+        <div className="flex gap-3">
           <button
             onClick={() => setView('kanban')}
-            className={`px-4 py-2 rounded-lg ${view === 'kanban' ? 'bg-teal-600 text-white' : 'bg-white border'}`}
+            className={`px-6 py-2.5 rounded-lg font-medium transition-colors ${view === 'kanban'
+              ? 'bg-teal-600 text-white shadow-sm'
+              : 'bg-white text-slate-700 border border-slate-300 hover:bg-slate-50'
+              }`}
           >
             Kanban
           </button>
           <button
             onClick={() => setView('list')}
-            className={`px-4 py-2 rounded-lg ${view === 'list' ? 'bg-teal-600 text-white' : 'bg-white border'}`}
+            className={`px-6 py-2.5 rounded-lg font-medium transition-colors ${view === 'list'
+              ? 'bg-teal-600 text-white shadow-sm'
+              : 'bg-white text-slate-700 border border-slate-300 hover:bg-slate-50'
+              }`}
           >
             List
           </button>
           <Link
             to="/erp/orders/new"
-            className="px-4 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700"
+            className="px-6 py-2.5 bg-teal-600 text-white rounded-lg hover:bg-teal-700 font-medium transition-colors"
           >
-            New Order
+            + New Order
           </Link>
         </div>
       </div>
@@ -132,14 +142,14 @@ export default function ErpDashboard() {
             placeholder="Search orders..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="flex-1 px-4 py-2 border rounded-lg"
+            className="flex-1 px-4 py-2.5 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent"
           />
           <select
             value={statusFilter}
             onChange={(e) => setStatusFilter(e.target.value)}
-            className="px-4 py-2 border rounded-lg"
+            className="px-4 py-2.5 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent"
           >
-            <option value="">All statuses</option>
+            <option value="">All Statuses</option>
             {STATUS_COLUMNS.map((s) => (
               <option key={s} value={s}>{s.replace('_', ' ')}</option>
             ))}
@@ -148,73 +158,82 @@ export default function ErpDashboard() {
       )}
 
       {loading ? (
-        <div className="animate-pulse h-64 bg-slate-200 rounded-xl" />
+        <div className="animate-pulse h-64 bg-slate-100 rounded-xl" />
       ) : view === 'kanban' ? (
-        <div className="flex gap-4 overflow-x-auto pb-4">
-          {STATUS_COLUMNS.map((col) => (
-            <div
-              key={col}
-              className="w-72 shrink-0 bg-slate-200 rounded-lg p-4 min-h-[400px]"
-            >
-              <h3 className="font-semibold text-slate-800 mb-4">
-                {col.replace('_', ' ')}
-              </h3>
-              <div className="space-y-3">
-                {(kanban[col] || []).map((order) => (
-                  <div
-                    key={order.id}
-                    className="bg-white rounded-lg p-3 shadow-sm"
-                  >
-                    <Link to={`/erp/orders/${order.id}`} className="block">
-                      <p className="font-medium text-slate-800 truncate">
-                        #{order.orderNumber}
-                      </p>
-                      <p className="text-sm text-slate-500">
-                        {order.customer?.firstName} {order.customer?.lastName}
-                      </p>
-                      <p className="text-sm font-medium text-teal-600 mt-1">
-                        ₹{order.totalAmount?.toFixed?.() || Number(order.totalAmount).toFixed(2)}
-                      </p>
-                    </Link>
-                    <div className="mt-2 flex flex-wrap gap-1">
-                      {order.status === 'QUOTATION' && (
-                        <button
-                          onClick={() => handleStatusChange(order.id, 'RENTAL_ORDER')}
-                          className="text-xs px-2 py-1 bg-slate-100 rounded hover:bg-slate-200"
-                        >
-                          To Order
-                        </button>
-                      )}
-                      {order.status === 'RENTAL_ORDER' && (
-                        <button
-                          onClick={() => handleStatusChange(order.id, 'CONFIRMED')}
-                          className="text-xs px-2 py-1 bg-teal-100 text-teal-700 rounded hover:bg-teal-200"
-                        >
-                          Confirm
-                        </button>
-                      )}
-                      {order.status === 'CONFIRMED' && (
-                        <button
-                          onClick={() => handlePickup(order.id)}
-                          className="text-xs px-2 py-1 bg-amber-100 text-amber-700 rounded hover:bg-amber-200"
-                        >
-                          Pickup
-                        </button>
-                      )}
-                      {order.status === 'PICKED_UP' && (
-                        <button
-                          onClick={() => handleReturn(order.id)}
-                          className="text-xs px-2 py-1 bg-green-100 text-green-700 rounded hover:bg-green-200"
-                        >
-                          Return
-                        </button>
-                      )}
-                    </div>
-                  </div>
-                ))}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+          {STATUS_COLUMNS.flatMap((col) => kanban[col] || []).map((order) => {
+            // Status badge colors
+            const statusColors = {
+              QUOTATION: 'bg-purple-100 text-purple-700 border-purple-200',
+              RENTAL_ORDER: 'bg-blue-100 text-blue-700 border-blue-200',
+              CONFIRMED: 'bg-teal-100 text-teal-700 border-teal-200',
+              PICKED_UP: 'bg-amber-100 text-amber-700 border-amber-200',
+              RETURNED: 'bg-green-100 text-green-700 border-green-200',
+              CANCELLED: 'bg-red-100 text-red-700 border-red-200',
+            };
+
+            return (
+              <div
+                key={order.id}
+                className="bg-white rounded-lg p-4 shadow-sm border border-slate-200 hover:shadow-md transition-shadow"
+              >
+                {/* Status Badge */}
+                <div className="flex justify-between items-start mb-3">
+                  <span className={`px-3 py-1 text-xs font-semibold rounded-full border ${statusColors[order.status] || 'bg-slate-100 text-slate-700'}`}>
+                    {order.status.replace('_', ' ')}
+                  </span>
+                </div>
+
+                <Link to={`/erp/orders/${order.id}`} className="block">
+                  <p className="font-semibold text-sm text-slate-900 mb-1">
+                    #{order.orderNumber}
+                  </p>
+                  <p className="text-sm text-slate-600 mb-2">
+                    {order.customer?.firstName} {order.customer?.lastName}
+                  </p>
+                  <p className="text-base font-bold text-teal-600">
+                    ₹{order.totalAmount?.toFixed?.() || Number(order.totalAmount).toFixed(2)}
+                  </p>
+                </Link>
+
+                {/* Action Buttons */}
+                <div className="mt-3 flex flex-wrap gap-1">
+                  {order.status === 'QUOTATION' && (
+                    <button
+                      onClick={() => handleStatusChange(order.id, 'RENTAL_ORDER')}
+                      className="text-xs px-2 py-1 bg-slate-100 rounded hover:bg-slate-200"
+                    >
+                      To Order
+                    </button>
+                  )}
+                  {order.status === 'RENTAL_ORDER' && (
+                    <button
+                      onClick={() => handleStatusChange(order.id, 'CONFIRMED')}
+                      className="text-xs px-2 py-1 bg-teal-100 text-teal-700 rounded hover:bg-teal-200"
+                    >
+                      Confirm
+                    </button>
+                  )}
+                  {order.status === 'CONFIRMED' && (
+                    <button
+                      onClick={() => handlePickup(order.id)}
+                      className="text-xs px-2 py-1 bg-amber-100 text-amber-700 rounded hover:bg-amber-200"
+                    >
+                      Pickup
+                    </button>
+                  )}
+                  {order.status === 'PICKED_UP' && (
+                    <button
+                      onClick={() => handleReturn(order.id)}
+                      className="text-xs px-2 py-1 bg-green-100 text-green-700 rounded hover:bg-green-200"
+                    >
+                      Return
+                    </button>
+                  )}
+                </div>
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       ) : (
         <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">

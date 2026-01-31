@@ -102,8 +102,31 @@ export default function ErpOrderDetail() {
       <div className="grid md:grid-cols-2 gap-6">
         <div className="bg-white rounded-xl border border-slate-200 p-6">
           <h3 className="font-semibold text-slate-800 mb-4">Customer</h3>
-          <p className="text-slate-600">{order.customer?.firstName} {order.customer?.lastName}</p>
-          <p className="text-slate-600 text-sm">{order.customer?.email}</p>
+          <p className="text-slate-600 font-medium mb-1">{order.customer?.firstName} {order.customer?.lastName}</p>
+          <p className="text-slate-600 text-sm mb-4">{order.customer?.email}</p>
+
+          <div className="pt-4 border-t grid grid-cols-2 gap-4">
+            <div>
+              <p className="text-xs font-semibold text-slate-500 uppercase mb-1">Shipping</p>
+              {order.deliveryAddress ? (
+                <div className="text-xs text-slate-600">
+                  <p>{order.deliveryAddress.line1}</p>
+                  <p>{order.deliveryAddress.city}, {order.deliveryAddress.zip}</p>
+                  <p>{order.deliveryAddress.country}</p>
+                </div>
+              ) : <p className="text-xs text-slate-400">N/A</p>}
+            </div>
+            <div>
+              <p className="text-xs font-semibold text-slate-500 uppercase mb-1">Billing</p>
+              {order.billingAddress ? (
+                <div className="text-xs text-slate-600">
+                  <p>{order.billingAddress.line1}</p>
+                  <p>{order.billingAddress.city}, {order.billingAddress.zip}</p>
+                  <p>{order.billingAddress.country}</p>
+                </div>
+              ) : <p className="text-xs text-slate-500">Same as shipping</p>}
+            </div>
+          </div>
         </div>
         <div className="bg-white rounded-xl border border-slate-200 p-6">
           <h3 className="font-semibold text-slate-800 mb-4">Rental Period</h3>

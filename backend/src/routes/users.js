@@ -20,16 +20,48 @@ userRoutes.get('/customers', requireRole('VENDOR', 'ADMIN'), async (req, res) =>
   }
 });
 
-userRoutes.get('/me', (req, res) => {
-  const { user } = req;
-  res.json({
-    id: user.id,
-    email: user.email,
-    firstName: user.firstName,
-    lastName: user.lastName,
-    role: user.role,
-    vendor: user.vendor ? { id: user.vendor.id, companyName: user.vendor.companyName } : null,
-  });
+userRoutes.get('/me', async (req, res) => {
+  try {
+    const { user } = req;
+
+    // 1. Get createdAt
+    const dbUser = await prisma.user.findUnique({
+      where: { id: user.id },
+      select: { createdAt: true }
+    });
+
+    // 2. Get counts separately (safer than nested select)
+    const ordersCount = await prisma.rentalOrder.count({
+      where: { customerId: user.id }
+    });
+
+    const wishlistCount = await prisma.wishlistItem.count({
+      where: { userId: user.id }
+    });
+
+    const activeRentalsCount = await prisma.rentalOrder.count({
+      where: {
+        customerId: user.id,
+        status: { in: ['RENTAL_ORDER', 'CONFIRMED', 'PICKED_UP'] }
+      }
+    });
+
+    res.json({
+      id: user.id,
+      email: user.email,
+      firstName: user.firstName,
+      lastName: user.lastName,
+      role: user.role,
+      vendor: user.vendor ? { id: user.vendor.id, companyName: user.vendor.companyName } : null,
+      createdAt: dbUser?.createdAt,
+      ordersCount,
+      activeRentalsCount,
+      wishlistCount,
+    });
+  } catch (err) {
+    console.error('Error in /me:', err);
+    res.status(500).json({ error: err.message });
+  }
 });
 
 userRoutes.get('/addresses', requireRole('CUSTOMER'), async (req, res) => {

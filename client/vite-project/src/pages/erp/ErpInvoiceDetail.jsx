@@ -63,10 +63,9 @@ export default function ErpInvoiceDetail() {
 
       <div className="mb-4">
         <span
-          className={`inline-block px-3 py-1 rounded-full text-sm font-medium ${
-            invoice.status === 'PAID' ? 'bg-green-100 text-green-800' :
-            invoice.status === 'DRAFT' ? 'bg-slate-100 text-slate-800' : 'bg-amber-100 text-amber-800'
-          }`}
+          className={`inline-block px-3 py-1 rounded-full text-sm font-medium ${invoice.status === 'PAID' ? 'bg-green-100 text-green-800' :
+              invoice.status === 'DRAFT' ? 'bg-slate-100 text-slate-800' : 'bg-amber-100 text-amber-800'
+            }`}
         >
           {invoice.status.replace('_', ' ')}
         </span>
@@ -75,8 +74,31 @@ export default function ErpInvoiceDetail() {
       <div className="grid md:grid-cols-2 gap-6 mb-6">
         <div className="bg-white rounded-xl border border-slate-200 p-6">
           <h3 className="font-semibold text-slate-800 mb-4">Customer</h3>
-          <p className="text-slate-600">{invoice.customer?.firstName} {invoice.customer?.lastName}</p>
-          <p className="text-slate-600 text-sm">{invoice.customer?.email}</p>
+          <p className="text-slate-600 font-medium mb-1">{invoice.customer?.firstName} {invoice.customer?.lastName}</p>
+          <p className="text-slate-600 text-sm mb-4">{invoice.customer?.email}</p>
+
+          <div className="pt-4 border-t grid grid-cols-2 gap-4">
+            <div>
+              <p className="text-xs font-semibold text-slate-500 uppercase mb-1">Billing</p>
+              {invoice.billingAddress ? (
+                <div className="text-xs text-slate-600">
+                  <p>{invoice.billingAddress.line1}</p>
+                  <p>{invoice.billingAddress.city}, {invoice.billingAddress.zip}</p>
+                  <p>{invoice.billingAddress.country}</p>
+                </div>
+              ) : <p className="text-xs text-slate-400">N/A</p>}
+            </div>
+            <div>
+              <p className="text-xs font-semibold text-slate-500 uppercase mb-1">Shipping</p>
+              {invoice.shippingAddress ? (
+                <div className="text-xs text-slate-600">
+                  <p>{invoice.shippingAddress.line1}</p>
+                  <p>{invoice.shippingAddress.city}, {invoice.shippingAddress.zip}</p>
+                  <p>{invoice.shippingAddress.country}</p>
+                </div>
+              ) : <p className="text-xs text-slate-500">Same as billing</p>}
+            </div>
+          </div>
         </div>
         <div className="bg-white rounded-xl border border-slate-200 p-6">
           <h3 className="font-semibold text-slate-800 mb-4">Order</h3>

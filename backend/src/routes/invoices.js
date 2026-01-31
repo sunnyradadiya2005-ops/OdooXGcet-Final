@@ -156,6 +156,8 @@ invoiceRoutes.post('/from-order/:orderId', async (req, res) => {
         securityDeposit: order.securityDeposit,
         lateFee,
         totalAmount,
+        billingAddress: order.billingAddress || null,
+        shippingAddress: order.deliveryAddress || null,
       },
     });
 

@@ -29,7 +29,7 @@ export default function Wishlist() {
     try {
       await api.delete(`/wishlist/${productId}`);
       setItems((prev) => prev.filter((i) => i.productId !== productId));
-    } catch {}
+    } catch { }
   };
 
   if (!user) return null;
@@ -71,6 +71,15 @@ export default function Wishlist() {
                   <h3 className="font-medium text-slate-800">{item.product?.name}</h3>
                   <p className="text-sm text-teal-600 font-medium mt-1">
                     ₹{item.product?.basePrice}/day
+                  </p>
+                  <p className="text-xs mt-1">
+                    {item.product?.stockQty > 0 ? (
+                      <span className={item.product.stockQty <= 5 ? 'text-orange-600 font-medium' : 'text-green-600'}>
+                        {item.product.stockQty} available
+                      </span>
+                    ) : (
+                      <span className="text-red-600 font-medium">Out of stock</span>
+                    )}
                   </p>
                   <p className="text-xs text-slate-500 mt-1">
                     {item.product?.vendor?.companyName}

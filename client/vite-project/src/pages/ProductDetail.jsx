@@ -76,6 +76,8 @@ export default function ProductDetail() {
         endDate: end.toISOString(),
         quantity,
       });
+      // Trigger cart update event to refresh header badge
+      window.dispatchEvent(new Event('cartUpdated'));
       navigate('/cart');
     } catch (err) {
       setError(err.response?.data?.error || 'Failed to add to cart');
@@ -132,6 +134,15 @@ export default function ProductDetail() {
                 <span className="text-slate-600 font-normal ml-2">• ₹{product.hourlyRate}/hr</span>
               )}
             </p>
+            <p className="text-sm mt-2">
+              {product.stockQty > 0 ? (
+                <span className={product.stockQty <= 5 ? 'text-orange-600 font-medium' : 'text-green-600 font-medium'}>
+                  ✓ {product.stockQty} units available
+                </span>
+              ) : (
+                <span className="text-red-600 font-medium">✗ Out of stock</span>
+              )}
+            </p>
           </div>
 
           <div className="mt-8 space-y-4">
@@ -176,40 +187,56 @@ export default function ProductDetail() {
               </div>
             </div>
             <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1">Quantity</label>
+              <div className="flex justify-between items-center mb-1">
+                <label className="block text-sm font-medium text-slate-700">Quantity</label>
+                <span className={`text-xs font-medium ${product.stockQty > 0 ? 'text-teal-600' : 'text-red-600'}`}>
+                  {product.stockQty > 0 ? `${product.stockQty} items available` : 'Out of Stock'}
+                </span>
+              </div>
               <div className="flex items-center gap-2">
                 <button
                   onClick={() => setQuantity(Math.max(1, quantity - 1))}
-                  className="w-10 h-10 border rounded-lg"
+                  disabled={product.stockQty <= 0}
+                  className="w-10 h-10 border rounded-lg disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   −
                 </button>
                 <span className="w-12 text-center">{quantity}</span>
                 <button
                   onClick={() => setQuantity(Math.min(product.stockQty, quantity + 1))}
-                  className="w-10 h-10 border rounded-lg"
+                  disabled={product.stockQty <= 0 || quantity >= product.stockQty}
+                  className="w-10 h-10 border rounded-lg disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   +
                 </button>
               </div>
             </div>
+
+            {error && <p className="text-red-600 text-sm mt-2">{error}</p>}
+
+            <div className="mt-8 p-4 bg-teal-50 rounded-lg">
+              <p className="text-slate-700">
+                Total: <span className="text-xl font-bold text-teal-600">₹{price}</span>
+              </p>
+            </div>
+
+            {product.stockQty > 0 ? (
+              <button
+                onClick={handleAddToCart}
+                disabled={!canAdd || adding}
+                className="mt-6 w-full py-3 bg-teal-600 text-white font-medium rounded-lg hover:bg-teal-700 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {adding ? 'Adding...' : canAdd ? 'Add to Cart' : 'Select dates to add to cart'}
+              </button>
+            ) : (
+              <button
+                disabled
+                className="mt-6 w-full py-3 bg-red-50 text-red-600 border border-red-200 font-medium rounded-lg cursor-not-allowed"
+              >
+                Sold Out
+              </button>
+            )}
           </div>
-
-          {error && <p className="text-red-600 text-sm mt-2">{error}</p>}
-
-          <div className="mt-8 p-4 bg-teal-50 rounded-lg">
-            <p className="text-slate-700">
-              Total: <span className="text-xl font-bold text-teal-600">₹{price}</span>
-            </p>
-          </div>
-
-          <button
-            onClick={handleAddToCart}
-            disabled={!canAdd || adding}
-            className="mt-6 w-full py-3 bg-teal-600 text-white font-medium rounded-lg hover:bg-teal-700 disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            {adding ? 'Adding...' : canAdd ? 'Add to Cart' : 'Select dates to add to cart'}
-          </button>
         </div>
       </div>
     </div>

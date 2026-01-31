@@ -12,6 +12,7 @@ export default function Cart() {
   const [couponDiscount, setCouponDiscount] = useState(0);
   const [couponError, setCouponError] = useState('');
   const [checkoutModal, setCheckoutModal] = useState(false);
+  const [error, setError] = useState(null);
 
   useEffect(() => {
     if (!user) {
@@ -24,8 +25,15 @@ export default function Cart() {
     }
     api
       .get('/cart')
-      .then((r) => setItems(r.data))
-      .catch(() => setItems([]))
+      .then((r) => {
+        console.log('Cart Items:', r.data);
+        setItems(r.data);
+      })
+      .catch((err) => {
+        console.error('Cart Load Error:', err);
+        setError(err.message || 'Failed to load cart');
+        setItems([]);
+      })
       .finally(() => setLoading(false));
   }, [user, navigate]);
 
@@ -44,14 +52,18 @@ export default function Cart() {
       setItems((prev) =>
         prev.map((i) => (i.id === id ? { ...i, quantity: qty } : i))
       );
-    } catch {}
+      // Trigger cart update event to refresh header badge
+      window.dispatchEvent(new Event('cartUpdated'));
+    } catch { }
   };
 
   const handleRemove = async (id) => {
     try {
       await api.delete(`/cart/${id}`);
       setItems((prev) => prev.filter((i) => i.id !== id));
-    } catch {}
+      // Trigger cart update event to refresh header badge
+      window.dispatchEvent(new Event('cartUpdated'));
+    } catch { }
   };
 
   const handleApplyCoupon = async () => {
@@ -71,11 +83,12 @@ export default function Cart() {
     setCheckoutModal(true);
   };
 
-  const handlePlaceOrder = async (deliveryMethod, deliveryAddress) => {
+  const handlePlaceOrder = async (deliveryMethod, deliveryAddress, billingAddress) => {
     try {
       const { data } = await api.post('/orders/from-cart', {
         deliveryMethod: deliveryMethod || 'standard',
         deliveryAddress,
+        billingAddress,
         couponCode: couponDiscount > 0 ? couponCode : undefined,
       });
       setItems([]);
@@ -102,6 +115,11 @@ export default function Cart() {
   return (
     <div className="max-w-4xl mx-auto px-4 py-8">
       <h1 className="text-2xl font-bold text-slate-800 mb-6">Cart</h1>
+      {error && (
+        <div className="bg-red-50 text-red-600 p-4 rounded-lg mb-4 border border-red-200">
+          Error loading cart: {error}
+        </div>
+      )}
       {items.length === 0 ? (
         <div className="bg-white rounded-xl border border-slate-200 p-12 text-center">
           <p className="text-slate-600 mb-4">Your cart is empty</p>
@@ -244,16 +262,27 @@ function ExpressCheckoutModal({ onClose, onConfirm, total }) {
     zip: '',
     country: 'India',
   });
+  const [useShippingForBilling, setUseShippingForBilling] = useState(true);
+  const [billingForm, setBillingForm] = useState({
+    name: '',
+    email: '',
+    line1: '',
+    city: '',
+    zip: '',
+    country: 'India',
+  });
   const [loading, setLoading] = useState(false);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
     try {
-      await onConfirm(deliveryMethod, {
-        ...form,
-        label: 'Checkout',
-      });
+      const deliveryAddress = { ...form, label: 'Shipping' };
+      const billingAddress = useShippingForBilling
+        ? { ...form, label: 'Billing' }
+        : { ...billingForm, label: 'Billing' };
+
+      await onConfirm(deliveryMethod, deliveryAddress, billingAddress);
     } finally {
       setLoading(false);
     }
@@ -264,76 +293,161 @@ function ExpressCheckoutModal({ onClose, onConfirm, total }) {
       <div className="bg-white rounded-xl max-w-md w-full p-6 max-h-[90vh] overflow-y-auto">
         <h2 className="text-xl font-bold text-slate-800 mb-4">Express Checkout</h2>
         <form onSubmit={handleSubmit} className="space-y-4">
+          {/* Shipping Address Section */}
           <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1">Name</label>
-            <input
-              type="text"
-              required
-              value={form.name}
-              onChange={(e) => setForm({ ...form, name: e.target.value })}
-              className="w-full px-4 py-2 border rounded-lg"
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1">Email</label>
-            <input
-              type="email"
-              required
-              value={form.email}
-              onChange={(e) => setForm({ ...form, email: e.target.value })}
-              className="w-full px-4 py-2 border rounded-lg"
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1">
-              Delivery method
-            </label>
-            <select
-              value={deliveryMethod}
-              onChange={(e) => setDeliveryMethod(e.target.value)}
-              className="w-full px-4 py-2 border rounded-lg"
-            >
-              <option value="standard">Standard delivery</option>
-              <option value="pickup">Pickup from store</option>
-            </select>
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1">Address</label>
-            <input
-              type="text"
-              required
-              value={form.line1}
-              onChange={(e) => setForm({ ...form, line1: e.target.value })}
-              className="w-full px-4 py-2 border rounded-lg mb-2"
-              placeholder="Street address"
-            />
-            <div className="grid grid-cols-2 gap-2">
-              <input
-                type="text"
-                required
-                value={form.city}
-                onChange={(e) => setForm({ ...form, city: e.target.value })}
-                className="px-4 py-2 border rounded-lg"
-                placeholder="City"
-              />
-              <input
-                type="text"
-                required
-                value={form.zip}
-                onChange={(e) => setForm({ ...form, zip: e.target.value })}
-                className="px-4 py-2 border rounded-lg"
-                placeholder="ZIP"
-              />
+            <h3 className="font-semibold text-slate-700 mb-2 border-b pb-1">Shipping Details</h3>
+            <div className="space-y-3">
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1">Name</label>
+                <input
+                  type="text"
+                  required
+                  value={form.name}
+                  onChange={(e) => setForm({ ...form, name: e.target.value })}
+                  className="w-full px-4 py-2 border rounded-lg"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1">Email</label>
+                <input
+                  type="email"
+                  required
+                  value={form.email}
+                  onChange={(e) => setForm({ ...form, email: e.target.value })}
+                  className="w-full px-4 py-2 border rounded-lg"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1">
+                  Delivery method
+                </label>
+                <select
+                  value={deliveryMethod}
+                  onChange={(e) => setDeliveryMethod(e.target.value)}
+                  className="w-full px-4 py-2 border rounded-lg"
+                >
+                  <option value="standard">Standard delivery</option>
+                  <option value="pickup">Pickup from store</option>
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1">Address</label>
+                <input
+                  type="text"
+                  required
+                  value={form.line1}
+                  onChange={(e) => setForm({ ...form, line1: e.target.value })}
+                  className="w-full px-4 py-2 border rounded-lg mb-2"
+                  placeholder="Street address"
+                />
+                <div className="grid grid-cols-2 gap-2">
+                  <input
+                    type="text"
+                    required
+                    value={form.city}
+                    onChange={(e) => setForm({ ...form, city: e.target.value })}
+                    className="px-4 py-2 border rounded-lg"
+                    placeholder="City"
+                  />
+                  <input
+                    type="text"
+                    required
+                    value={form.zip}
+                    onChange={(e) => setForm({ ...form, zip: e.target.value })}
+                    className="px-4 py-2 border rounded-lg"
+                    placeholder="ZIP"
+                  />
+                </div>
+                <input
+                  type="text"
+                  value={form.country}
+                  onChange={(e) => setForm({ ...form, country: e.target.value })}
+                  className="w-full px-4 py-2 border rounded-lg mt-2"
+                  placeholder="Country"
+                />
+              </div>
             </div>
-            <input
-              type="text"
-              value={form.country}
-              onChange={(e) => setForm({ ...form, country: e.target.value })}
-              className="w-full px-4 py-2 border rounded-lg mt-2"
-              placeholder="Country"
-            />
           </div>
-          <p className="font-semibold text-lg">Total: ₹{total.toFixed(2)}</p>
+
+          {/* Billing Address Section */}
+          <div className="pt-2">
+            <h3 className="font-semibold text-slate-700 mb-2 border-b pb-1">Billing Details</h3>
+            <div className="flex items-center gap-2 mb-3">
+              <input
+                type="checkbox"
+                id="sameAsShipping"
+                checked={useShippingForBilling}
+                onChange={(e) => setUseShippingForBilling(e.target.checked)}
+                className="w-4 h-4 text-teal-600 rounded border-slate-300 focus:ring-teal-500"
+              />
+              <label htmlFor="sameAsShipping" className="text-sm text-slate-700">
+                Billing address is same as shipping address
+              </label>
+            </div>
+
+            {!useShippingForBilling && (
+              <div className="space-y-3 pl-2 border-l-2 border-slate-100">
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-1">Billing Name</label>
+                  <input
+                    type="text"
+                    required
+                    value={billingForm.name}
+                    onChange={(e) => setBillingForm({ ...billingForm, name: e.target.value })}
+                    className="w-full px-4 py-2 border rounded-lg"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-1">Billing Email</label>
+                  <input
+                    type="email"
+                    required
+                    value={billingForm.email}
+                    onChange={(e) => setBillingForm({ ...billingForm, email: e.target.value })}
+                    className="w-full px-4 py-2 border rounded-lg"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-1">Billing Address</label>
+                  <input
+                    type="text"
+                    required
+                    value={billingForm.line1}
+                    onChange={(e) => setBillingForm({ ...billingForm, line1: e.target.value })}
+                    className="w-full px-4 py-2 border rounded-lg mb-2"
+                    placeholder="Street address"
+                  />
+                  <div className="grid grid-cols-2 gap-2">
+                    <input
+                      type="text"
+                      required
+                      value={billingForm.city}
+                      onChange={(e) => setBillingForm({ ...billingForm, city: e.target.value })}
+                      className="px-4 py-2 border rounded-lg"
+                      placeholder="City"
+                    />
+                    <input
+                      type="text"
+                      required
+                      value={billingForm.zip}
+                      onChange={(e) => setBillingForm({ ...billingForm, zip: e.target.value })}
+                      className="px-4 py-2 border rounded-lg"
+                      placeholder="ZIP"
+                    />
+                  </div>
+                  <input
+                    type="text"
+                    value={billingForm.country}
+                    onChange={(e) => setBillingForm({ ...billingForm, country: e.target.value })}
+                    className="w-full px-4 py-2 border rounded-lg mt-2"
+                    placeholder="Country"
+                  />
+                </div>
+              </div>
+            )}
+          </div>
+
+          <p className="font-semibold text-lg pt-2 border-t text-right">Total: ₹{total.toFixed(2)}</p>
           <div className="flex gap-2">
             <button
               type="button"

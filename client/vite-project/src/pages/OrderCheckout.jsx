@@ -98,6 +98,10 @@ export default function OrderCheckout() {
         setPaying(false);
         alert('Payment failed');
       });
+      // Handle modal dismissal (user closes without paying)
+      rzp.on('payment.cancel', () => {
+        setPaying(false);
+      });
     } catch (err) {
       alert(err.response?.data?.error || 'Payment initiation failed');
       setPaying(false);
