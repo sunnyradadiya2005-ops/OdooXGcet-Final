@@ -1,0 +1,411 @@
+// KirayaKart - Rental Management System
+// PostgreSQL Schema for Neon DB
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum UserRole {
+  CUSTOMER
+  VENDOR
+  ADMIN
+}
+
+enum OrderStatus {
+  QUOTATION
+  RENTAL_ORDER
+  CONFIRMED
+  PICKED_UP
+  RETURNED
+  CANCELLED
+}
+
+enum InvoiceStatus {
+  DRAFT
+  POSTED
+  PAID
+  PARTIALLY_PAID
+}
+
+enum PaymentStatus {
+  PENDING
+  COMPLETED
+  FAILED
+  REFUNDED
+}
+
+// ============ USERS & AUTH ============
+
+model User {
+  id            String    @id @default(cuid())
+  email         String    @unique
+  passwordHash  String    @map("password_hash")
+  firstName     String    @map("first_name")
+  lastName      String    @map("last_name")
+  role          UserRole  @default(CUSTOMER)
+  emailVerified Boolean   @default(false) @map("email_verified")
+  resetToken    String?   @map("reset_token")
+  resetTokenExp DateTime? @map("reset_token_exp")
+  createdAt     DateTime  @default(now()) @map("created_at")
+  updatedAt     DateTime  @updatedAt @map("updated_at")
+
+  vendor         Vendor?
+  addresses      Address[]
+  cartItems      CartItem[]
+  invoices       Invoice[]
+  quotations     Quotation[]
+  rentalOrders   RentalOrder[]
+  wishlistItems  WishlistItem[]
+}
+
+model Vendor {
+  id              String   @id @default(cuid())
+  userId          String   @unique @map("user_id")
+  companyName     String   @map("company_name")
+  gstNumber       String   @map("gst_number")
+  category        String   // predefined product category
+  logoUrl         String?  @map("logo_url")
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  products        Product[]
+  quotations      Quotation[]
+  rentalOrders    RentalOrder[]
+  invoices        Invoice[]
+}
+
+// ============ PRODUCTS ============
+
+model ProductCategory {
+  id          String    @id @default(cuid())
+  name        String    @unique
+  slug        String    @unique
+  description String?
+  createdAt   DateTime  @default(now()) @map("created_at")
+
+  products    Product[]
+}
+
+model Product {
+  id          String   @id @default(cuid())
+  vendorId    String   @map("vendor_id")
+  categoryId  String?  @map("category_id")
+  name        String
+  slug        String
+  description String?
+  brand       String?
+  basePrice   Decimal  @map("base_price") @db.Decimal(12, 2) // per day
+  hourlyRate  Decimal? @map("hourly_rate") @db.Decimal(12, 2)
+  stockQty    Int      @default(1) @map("stock_qty")
+  images      String[] @default([]) // URLs
+  isActive    Boolean  @default(true) @map("is_active")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  vendor          Vendor           @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+  category        ProductCategory? @relation(fields: [categoryId], references: [id])
+  attributes      ProductAttribute[]
+  variants        ProductVariant[]
+  rentalPeriods   RentalPeriod[]
+  cartItems       CartItem[]
+  wishlistItems   WishlistItem[]
+  quotationItems  QuotationItem[]
+  orderItems      OrderItem[]
+  reservations    Reservation[]
+}
+
+model ProductAttribute {
+  id        String   @id @default(cuid())
+  productId String   @map("product_id")
+  name      String   // e.g. Color, Size
+  value     String   // e.g. Red, Large
+  createdAt DateTime @default(now()) @map("created_at")
+
+  product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@unique([productId, name, value])
+  @@index([productId])
+}
+
+model ProductVariant {
+  id        String   @id @default(cuid())
+  productId String   @map("product_id")
+  sku       String?  @unique
+  attributes Json    // { color: "Red", size: "L" }
+  priceMod   Decimal @default(0) @map("price_mod") @db.Decimal(12, 2)
+  stockQty   Int     @default(1) @map("stock_qty")
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@index([productId])
+}
+
+model RentalPeriod {
+  id        String   @id @default(cuid())
+  productId String   @map("product_id")
+  name      String   // e.g. "1 Day", "1 Week"
+  days      Int      @default(1)
+  hours     Int?     // for hourly rentals
+  multiplier Decimal @default(1) @db.Decimal(5, 2) // price = basePrice * multiplier
+  createdAt DateTime @default(now()) @map("created_at")
+
+  product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@index([productId])
+}
+
+// ============ ADDRESSES ============
+
+model Address {
+  id        String   @id @default(cuid())
+  userId    String   @map("user_id")
+  label     String?  // Home, Office
+  line1     String   @map("line1")
+  line2     String?  @map("line2")
+  city      String
+  state     String?
+  zip       String
+  country   String   @default("India")
+  isDefault Boolean  @default(false) @map("is_default")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+// ============ CART & WISHLIST ============
+
+model CartItem {
+  id          String   @id @default(cuid())
+  userId      String   @map("user_id")
+  productId   String   @map("product_id")
+  variantId   String?  @map("variant_id")
+  quantity    Int      @default(1)
+  startDate   DateTime @map("start_date")
+  endDate     DateTime @map("end_date")
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  product     Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, productId, variantId, startDate, endDate])
+  @@index([userId])
+}
+
+model WishlistItem {
+  id        String   @id @default(cuid())
+  userId    String   @map("user_id")
+  productId String   @map("product_id")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, productId])
+  @@index([userId])
+}
+
+// ============ QUOTATIONS & ORDERS ============
+
+model Quotation {
+  id            String      @id @default(cuid())
+  quoteNumber   String      @unique @map("quote_number")
+  vendorId      String      @map("vendor_id")
+  customerId    String      @map("customer_id")
+  status        OrderStatus @default(QUOTATION)
+  subtotal      Decimal     @default(0) @db.Decimal(12, 2)
+  taxAmount     Decimal     @default(0) @map("tax_amount") @db.Decimal(12, 2)
+  totalAmount   Decimal     @default(0) @map("total_amount") @db.Decimal(12, 2)
+  notes         String?
+  validUntil    DateTime?   @map("valid_until")
+  createdAt     DateTime    @default(now()) @map("created_at")
+  updatedAt     DateTime    @updatedAt @map("updated_at")
+
+  vendor        Vendor          @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+  customer      User            @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  items         QuotationItem[]
+  rentalOrder   RentalOrder?
+}
+
+model QuotationItem {
+  id          String   @id @default(cuid())
+  quotationId String   @map("quotation_id")
+  productId   String   @map("product_id")
+  variantId   String?  @map("variant_id")
+  quantity    Int      @default(1)
+  startDate   DateTime @map("start_date")
+  endDate     DateTime @map("end_date")
+  unitPrice   Decimal  @map("unit_price") @db.Decimal(12, 2)
+  lineTotal   Decimal  @map("line_total") @db.Decimal(12, 2)
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  quotation   Quotation @relation(fields: [quotationId], references: [id], onDelete: Cascade)
+  product     Product   @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@index([quotationId])
+}
+
+model RentalOrder {
+  id              String      @id @default(cuid())
+  orderNumber     String      @unique @map("order_number")
+  quotationId     String?     @unique @map("quotation_id")
+  vendorId        String      @map("vendor_id")
+  customerId      String      @map("customer_id")
+  status          OrderStatus @default(QUOTATION)
+  subtotal        Decimal     @default(0) @db.Decimal(12, 2)
+  taxAmount       Decimal     @default(0) @map("tax_amount") @db.Decimal(12, 2)
+  discountAmount  Decimal     @default(0) @map("discount_amount") @db.Decimal(12, 2)
+  totalAmount     Decimal     @default(0) @map("total_amount") @db.Decimal(12, 2)
+  securityDeposit Decimal     @default(0) @map("security_deposit") @db.Decimal(12, 2)
+  deliveryMethod  String      @default("standard") @map("delivery_method") // standard, pickup
+  deliveryAddress Json?       @map("delivery_address")
+  notes           String?
+  confirmedAt     DateTime?   @map("confirmed_at")
+  createdAt       DateTime    @default(now()) @map("created_at")
+  updatedAt       DateTime    @updatedAt @map("updated_at")
+
+  quotation       Quotation?  @relation(fields: [quotationId], references: [id])
+  vendor          Vendor      @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+  customer        User        @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  items           OrderItem[]
+  reservations    Reservation[]
+  pickups         Pickup[]
+  returns         Return[]
+  invoices        Invoice[]
+}
+
+model OrderItem {
+  id          String   @id @default(cuid())
+  orderId     String   @map("order_id")
+  productId   String   @map("product_id")
+  variantId   String?  @map("variant_id")
+  quantity    Int      @default(1)
+  startDate   DateTime @map("start_date")
+  endDate     DateTime @map("end_date")
+  unitPrice   Decimal  @map("unit_price") @db.Decimal(12, 2)
+  lineTotal   Decimal  @map("line_total") @db.Decimal(12, 2)
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  order       RentalOrder @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  product     Product     @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@index([orderId])
+}
+
+// ============ RESERVATIONS & INVENTORY ============
+
+model Reservation {
+  id          String   @id @default(cuid())
+  orderId     String   @map("order_id")
+  productId   String   @map("product_id")
+  variantId   String?  @map("variant_id")
+  quantity    Int      @default(1)
+  startDate   DateTime @map("start_date")
+  endDate     DateTime @map("end_date")
+  status      String   @default("active") // active, released
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  order       RentalOrder @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  product     Product     @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@index([orderId])
+  @@index([productId, startDate, endDate])
+}
+
+model Pickup {
+  id          String   @id @default(cuid())
+  orderId     String   @map("order_id")
+  pickedAt    DateTime @map("picked_at")
+  notes       String?
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  order       RentalOrder @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  @@index([orderId])
+}
+
+model Return {
+  id          String   @id @default(cuid())
+  orderId     String   @map("order_id")
+  returnedAt  DateTime @map("returned_at")
+  lateFee     Decimal  @default(0) @map("late_fee") @db.Decimal(12, 2)
+  damageFee   Decimal  @default(0) @map("damage_fee") @db.Decimal(12, 2)
+  notes       String?
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  order       RentalOrder @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  @@index([orderId])
+}
+
+// ============ INVOICES & PAYMENTS ============
+
+model Invoice {
+  id              String        @id @default(cuid())
+  invoiceNumber   String        @unique @map("invoice_number")
+  orderId         String        @map("order_id")
+  vendorId        String        @map("vendor_id")
+  customerId      String        @map("customer_id")
+  status          InvoiceStatus @default(DRAFT)
+  subtotal        Decimal       @default(0) @db.Decimal(12, 2)
+  taxAmount       Decimal       @default(0) @map("tax_amount") @db.Decimal(12, 2)
+  discountAmount  Decimal       @default(0) @map("discount_amount") @db.Decimal(12, 2)
+  securityDeposit Decimal       @default(0) @map("security_deposit") @db.Decimal(12, 2)
+  lateFee         Decimal       @default(0) @map("late_fee") @db.Decimal(12, 2)
+  totalAmount     Decimal       @default(0) @map("total_amount") @db.Decimal(12, 2)
+  amountPaid      Decimal       @default(0) @map("amount_paid") @db.Decimal(12, 2)
+  postedAt        DateTime?     @map("posted_at")
+  createdAt       DateTime      @default(now()) @map("created_at")
+  updatedAt       DateTime      @updatedAt @map("updated_at")
+
+  order           RentalOrder   @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  vendor          Vendor        @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+  customer        User          @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  payments        Payment[]
+
+  @@index([orderId])
+  @@index([vendorId])
+  @@index([customerId])
+}
+
+model Payment {
+  id              String        @id @default(cuid())
+  invoiceId       String        @map("invoice_id")
+  razorpayOrderId String?       @map("razorpay_order_id")
+  razorpayPaymentId String?     @map("razorpay_payment_id")
+  amount          Decimal       @db.Decimal(12, 2)
+  status          PaymentStatus @default(PENDING)
+  method          String        @default("card") // card, upi, netbanking
+  metadata        Json?
+  paidAt          DateTime?     @map("paid_at")
+  createdAt       DateTime      @default(now()) @map("created_at")
+
+  invoice         Invoice       @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+
+  @@index([invoiceId])
+}
+
+model Coupon {
+  id            String    @id @default(cuid())
+  code          String    @unique
+  discountType  String    @map("discount_type") // percent, fixed
+  discountValue Decimal   @map("discount_value") @db.Decimal(12, 2)
+  minOrderAmount Decimal? @map("min_order_amount") @db.Decimal(12, 2)
+  maxDiscount   Decimal?  @map("max_discount") @db.Decimal(12, 2)
+  usageLimit    Int?      @map("usage_limit")
+  usedCount     Int       @default(0) @map("used_count")
+  validFrom     DateTime  @map("valid_from")
+  validUntil    DateTime  @map("valid_until")
+  isActive      Boolean   @default(true) @map("is_active")
+  createdAt     DateTime  @default(now()) @map("created_at")
+
+  @@index([code])
+}
