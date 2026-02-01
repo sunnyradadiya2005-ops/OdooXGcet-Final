@@ -52,6 +52,9 @@ model User {
   resetToken    String?   @map("reset_token")
   resetTokenExp DateTime? @map("reset_token_exp")
   // Email OTP verification records are stored in EmailVerification model
+  referralCode  String?   @unique @map("referral_code")
+  referredBy    String?   @map("referred_by") // Code of the referrer
+  walletBalance Decimal   @default(0) @map("wallet_balance") @db.Decimal(12, 2)
   createdAt     DateTime  @default(now()) @map("created_at")
   updatedAt     DateTime  @updatedAt @map("updated_at")
 

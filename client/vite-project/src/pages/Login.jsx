@@ -1,7 +1,6 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import api from '../lib/api';
 
 export default function Login() {
   const navigate = useNavigate();
@@ -30,76 +29,97 @@ export default function Login() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-teal-600 px-4">
-      <div className="w-full max-w-md">
-        <div className="bg-white rounded-xl shadow-xl border border-slate-200 p-8">
+    <div className="min-h-screen flex items-center justify-center bg-slate-50 relative overflow-hidden px-4">
+      {/* Decorative Background Elements */}
+      <div className="absolute top-0 left-0 w-full h-full overflow-hidden pointer-events-none">
+        <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-teal-500/10 rounded-full blur-3xl transform translate-x-1/2 -translate-y-1/2"></div>
+        <div className="absolute bottom-0 left-0 w-[500px] h-[500px] bg-teal-500/10 rounded-full blur-3xl transform -translate-x-1/2 translate-y-1/2"></div>
+      </div>
+
+      <div className="w-full max-w-md relative z-10">
+        <div className="bg-white rounded-2xl shadow-xl border border-slate-100 p-8 md:p-10 card">
           {/* Logo inside card */}
-          <div className="text-center mb-6">
-            <Link to="/" className="text-3xl font-bold text-teal-600 hover:text-teal-700 transition-colors">
-              KirayaKart
+          <div className="text-center mb-8">
+            <Link to="/" className="inline-flex items-center gap-2 group">
+              <div className="w-10 h-10 bg-teal-600 rounded-lg flex items-center justify-center text-white font-bold text-xl group-hover:bg-teal-700 transition-colors">
+                K
+              </div>
+              <span className="text-2xl font-bold text-slate-900 tracking-tight group-hover:text-teal-700 transition-colors">
+                KirayaKart
+              </span>
             </Link>
-            <p className="text-xs text-slate-500 mt-1">Rental Management System</p>
           </div>
 
-          <h1 className="text-xl font-bold text-slate-900 mb-1 text-center">Sign in to your account</h1>
-          <p className="text-sm text-slate-600 mb-5 text-center">Access your rental dashboard</p>
+          <h1 className="text-2xl font-bold text-slate-900 mb-2 text-center">Welcome back</h1>
+          <p className="text-slate-500 mb-8 text-center text-sm">Sign in to manage your account</p>
 
-          <form onSubmit={handleSubmit} className="space-y-4">
+          <form onSubmit={handleSubmit} className="space-y-5">
             {error && (
-              <div className="p-3 bg-red-50 border border-red-200 text-red-700 text-sm rounded-lg">
+              <div className="p-4 bg-red-50 border border-red-100 text-red-600 text-sm rounded-lg flex items-center gap-2 animate-in fade-in slide-in-from-top-2">
+                <svg className="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
                 {error}
               </div>
             )}
-            <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1.5">Email Address</label>
+            
+            <div className="space-y-1.5">
+              <label className="block text-sm font-semibold text-slate-700">Email Address</label>
               <input
                 type="email"
                 required
                 value={form.email}
                 onChange={(e) => setForm({ ...form, email: e.target.value })}
-                className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent"
-                placeholder="you@example.com"
+                className="input-field" // Using new utility class
+                placeholder="you@company.com"
               />
             </div>
-            <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1.5">Password</label>
+            
+            <div className="space-y-1.5">
+              <div className="flex justify-between items-center">
+                <label className="block text-sm font-semibold text-slate-700">Password</label>
+                <Link
+                  to="/forgot-password"
+                  className="text-sm text-teal-600 hover:text-teal-700 font-medium transition-colors"
+                >
+                  Forgot password?
+                </Link>
+              </div>
               <input
                 type="password"
                 required
                 value={form.password}
                 onChange={(e) => setForm({ ...form, password: e.target.value })}
-                className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent"
+                className="input-field" // Using new utility class
                 placeholder="••••••••"
               />
             </div>
-            <div className="flex justify-end">
-              <Link
-                to="/forgot-password"
-                className="text-sm text-teal-600 hover:text-teal-700 font-medium transition-colors"
-              >
-                Forgot password?
-              </Link>
-            </div>
+
             <button
               type="submit"
               disabled={loading}
-              className="w-full py-2.5 bg-teal-600 text-white font-semibold rounded-lg hover:bg-teal-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              className="w-full btn-primary py-3 text-base shadow-lg shadow-teal-500/20" // Using new utility class
             >
-              {loading ? 'Signing in...' : 'Sign In'}
+              {loading ? (
+                <div className="flex items-center justify-center gap-2">
+                  <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                  <span>Signing in...</span>
+                </div>
+              ) : 'Sign In'}
             </button>
           </form>
-          <div className="mt-6 pt-5 border-t border-slate-200">
-            <p className="text-center text-sm text-slate-600">
+
+          <div className="mt-8 pt-6 border-t border-slate-100 space-y-4">
+            <div className="text-center text-sm text-slate-600">
               Don't have an account?{' '}
-              <Link to="/register" className="text-teal-600 font-semibold hover:text-teal-700 transition-colors">
-                Register as Customer
+              <Link to="/register" className="text-teal-600 font-semibold hover:text-teal-700 hover:underline transition-all">
+                Create Customer Account
               </Link>
-            </p>
-            <p className="text-center text-sm text-slate-600 mt-2">
-              <Link to="/register/vendor" className="text-teal-600 font-semibold hover:text-teal-700 transition-colors">
-                Become a Vendor
+            </div>
+            <div className="text-center text-sm text-slate-600">
+              Want to sell on KirayaKart?{' '}
+              <Link to="/register/vendor" className="text-teal-600 font-semibold hover:text-teal-700 hover:underline transition-all">
+                Register as Vendor
               </Link>
-            </p>
+            </div>
           </div>
         </div>
       </div>

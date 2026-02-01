@@ -1,32 +1,24 @@
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import Header from '../components/Header';
 
 export default function LandingPage() {
     const { user } = useAuth();
     const navigate = useNavigate();
 
-    // Redirect authenticated users to their respective dashboards
+    // Redirect authenticated users
     useEffect(() => {
         if (user) {
-            if (user.role === 'ADMIN' || user.role === 'VENDOR') {
-                navigate('/erp', { replace: true });
-            } else {
-                navigate('/shop', { replace: true });
-            }
+            navigate(user.role === 'CUSTOMER' ? '/shop' : '/erp', { replace: true });
         }
     }, [user, navigate]);
 
-    // If user is logged in, don't render (will redirect)
-    if (user) {
-        return null;
-    }
+    if (user) return null;
 
     return (
         <div className="min-h-screen bg-white">
-            {/* Header */}
-            <header className="border-b border-slate-200 sticky top-0 bg-white z-50 shadow-sm">
+            <header className="bg-white border-b border-slate-200 sticky top-0 z-50">
                 <div className="max-w-7xl mx-auto px-6">
                     <div className="flex items-center justify-between h-16">
                         <Link to="/" className="text-2xl font-bold text-teal-600 hover:text-teal-700 transition-colors">

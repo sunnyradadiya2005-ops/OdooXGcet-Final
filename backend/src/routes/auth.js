@@ -145,7 +145,7 @@ authRoutes.post(
       if (!errors.isEmpty()) {
         return res.status(400).json({ errors: errors.array(), message: 'Validation failed' });
       }
-      const { firstName, lastName, email, password, verificationToken } = req.body;
+      const { firstName, lastName, email, password, verificationToken, referralCode } = req.body;
       const existing = await prisma.user.findUnique({ where: { email } });
       if (existing) {
         return res.status(400).json({ message: 'Email already registered' });
@@ -163,6 +163,17 @@ authRoutes.post(
       if (!ver) {
         return res.status(400).json({ message: 'Email not verified or verification token expired' });
       }
+
+      // Referral Logic
+      let referredBy = null;
+      if (referralCode) {
+        const referrer = await prisma.user.findUnique({ where: { referralCode } });
+        if (referrer) referredBy = referrer.id;
+      }
+
+      // Generate own referral code
+      const ownReferralCode = (firstName.slice(0, 3) + Math.random().toString(36).substring(2, 5)).toUpperCase();
+
       const hash = await bcrypt.hash(password, 10);
       const user = await prisma.user.create({
         data: {
@@ -172,8 +183,30 @@ authRoutes.post(
           firstName,
           lastName,
           role: 'CUSTOMER',
+          referralCode: ownReferralCode,
+          referredBy,
         },
       });
+
+      // Create Welcome Coupon if referred
+      if (referredBy) {
+        try {
+           await prisma.coupon.create({
+            data: {
+              code: `WELCOME-${ownReferralCode}`,
+              discountType: 'percent',
+              discountValue: 10,
+              usageLimit: 1,
+              validFrom: new Date(),
+              validUntil: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // 30 days
+              minOrderAmount: 500
+            }
+           });
+        } catch (couponErr) {
+           console.error("Failed to create welcome coupon", couponErr);
+        }
+      }
+
       const token = jwt.sign(
         { userId: user.id, role: user.role },
         process.env.JWT_SECRET,
@@ -181,7 +214,7 @@ authRoutes.post(
       );
       res.status(201).json({
         token,
-        user: { id: user.id, email, firstName, lastName, role: 'CUSTOMER' },
+        user: { id: user.id, email, firstName, lastName, role: 'CUSTOMER', referralCode: ownReferralCode },
       });
     } catch (err) {
       res.status(500).json({ message: 'Registration failed', error: err.message });

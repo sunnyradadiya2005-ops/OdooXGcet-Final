@@ -13,7 +13,7 @@ import ForgotPassword from './pages/ForgotPassword';
 import ResetPassword from './pages/ResetPassword';
 
 // Customer site
-import Home from './pages/Home';
+import Shop from './pages/Shop';
 import ProductDetail from './pages/ProductDetail';
 import Cart from './pages/Cart';
 import Wishlist from './pages/Wishlist';
@@ -52,10 +52,12 @@ import AdminRoute from './components/AdminRoute';
 
 function CustomerLayout({ children }) {
   return (
-    <>
+    <div className="min-h-screen bg-slate-50">
       <Header />
-      {children}
-    </>
+      <main className="pt-28 pb-12">
+        {children}
+      </main>
+    </div>
   );
 }
 
@@ -79,7 +81,7 @@ export default function App() {
             path="/shop"
             element={
               <CustomerLayout>
-                <Home />
+                <Shop />
               </CustomerLayout>
             }
           />

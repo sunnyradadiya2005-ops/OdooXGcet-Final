@@ -33,6 +33,22 @@ export default function ErpReports() {
       .finally(() => setLoading(false));
   }, [startDate, endDate, user?.role]);
 
+  const handleExport = async (url, filename) => {
+    try {
+      const response = await api.get(url, { responseType: 'blob' });
+      const blobUrl = window.URL.createObjectURL(new Blob([response.data]));
+      const link = document.createElement('a');
+      link.href = blobUrl;
+      link.setAttribute('download', filename);
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(blobUrl);
+    } catch (err) {
+      alert(err.response?.data?.error || 'Export failed');
+    }
+  };
+
   return (
     <ErpLayout>
       <h1 className="text-3xl font-bold text-slate-900 mb-8">Reports & Analytics</h1>
@@ -59,21 +75,18 @@ export default function ErpReports() {
           </div>
         </div>
         <div className="flex gap-3 items-end">
-          <a
-            href={`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/exports/revenue?format=pdf&startDate=${startDate}&endDate=${endDate}`}
-            target="_blank"
-            rel="noopener noreferrer"
+      <button
+            onClick={() => handleExport(`/exports/revenue?format=pdf&startDate=${startDate}&endDate=${endDate}`, `revenue-report-${startDate}-${endDate}.pdf`)}
             className="px-6 py-2.5 bg-red-600 text-white rounded-lg hover:bg-red-700 text-sm font-medium transition-colors"
           >
             📄 Export PDF
-          </a>
-          <a
-            href={`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/exports/revenue?format=csv&startDate=${startDate}&endDate=${endDate}`}
-            download
+          </button>
+          <button
+            onClick={() => handleExport(`/exports/revenue?format=csv&startDate=${startDate}&endDate=${endDate}`, `revenue-report-${startDate}-${endDate}.csv`)}
             className="px-6 py-2.5 bg-green-600 text-white rounded-lg hover:bg-green-700 text-sm font-medium transition-colors"
           >
             📊 Export CSV
-          </a>
+          </button>
         </div>
       </div>
 
@@ -108,13 +121,12 @@ export default function ErpReports() {
           <div className="bg-white rounded-xl border border-slate-200 p-6">
             <div className="flex justify-between items-center mb-4">
               <h2 className="font-semibold text-slate-800">Most Rented Products</h2>
-              <a
-                href={`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/exports/products?format=csv&startDate=${startDate}&endDate=${endDate}`}
-                download
+              <button
+                onClick={() => handleExport(`/exports/products?format=csv&startDate=${startDate}&endDate=${endDate}`, `product-report-${startDate}-${endDate}.csv`)}
                 className="px-3 py-1 bg-green-600 text-white rounded text-sm hover:bg-green-700"
               >
                 📊 Export CSV
-              </a>
+              </button>
             </div>
             <div className="space-y-2">
               {mostRented.slice(0, 10).map((item, i) => (
@@ -133,13 +145,12 @@ export default function ErpReports() {
             <div className="bg-white rounded-xl border border-slate-200 p-6">
               <div className="flex justify-between items-center mb-4">
                 <h2 className="font-semibold text-slate-800">Vendor Earnings</h2>
-                <a
-                  href={`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/exports/vendors?format=csv&startDate=${startDate}&endDate=${endDate}`}
-                  download
+                <button
+                  onClick={() => handleExport(`/exports/vendors?format=csv&startDate=${startDate}&endDate=${endDate}`, `vendor-earnings-${startDate}-${endDate}.csv`)}
                   className="px-3 py-1 bg-green-600 text-white rounded text-sm hover:bg-green-700"
                 >
                   📊 Export CSV
-                </a>
+                </button>
               </div>
               <div className="space-y-2">
                 {vendorEarnings.map((v, i) => (

@@ -128,6 +128,40 @@ export default function Profile() {
                     </div>
                 )}
 
+                {/* Referrals & Wallet */}
+                <div className="bg-gradient-to-br from-teal-600 to-teal-700 rounded-xl shadow-lg border border-teal-500 p-8 mb-6 text-white relative overflow-hidden">
+                    <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full blur-3xl translate-x-1/2 -translate-y-1/2"></div>
+                    
+                    <div className="relative z-10 flex flex-col md:flex-row justify-between items-center gap-8">
+                        <div>
+                            <h2 className="text-2xl font-bold mb-2">Refer & Earn</h2>
+                            <p className="text-teal-100 mb-6 max-w-md">
+                                Share your code with friends. They get a <span className="font-bold text-white">10% Welcome Coupon</span>, and you earn credits when they order!
+                            </p>
+                            
+                            <div className="flex items-center gap-4">
+                                <div className="bg-white/20 backdrop-blur px-4 py-2 rounded-lg border border-white/30 font-mono text-xl tracking-wider font-bold">
+                                    {profileData.referralCode || 'GENERATING...'}
+                                </div>
+                                <button
+                                    onClick={() => {
+                                        navigator.clipboard.writeText(profileData.referralCode);
+                                        // Optional: Add toast notification here
+                                    }}
+                                    className="bg-white text-teal-700 hover:bg-teal-50 px-4 py-2 rounded-lg font-semibold text-sm transition-colors shadow-sm"
+                                >
+                                    Copy Code
+                                </button>
+                            </div>
+                        </div>
+
+                        <div className="bg-white/10 backdrop-blur rounded-xl p-6 border border-white/20 min-w-[200px] text-center">
+                            <p className="text-teal-100 text-sm font-medium uppercase tracking-wider mb-1">Wallet Balance</p>
+                            <p className="text-4xl font-bold">₹{Number(profileData.walletBalance || 0).toLocaleString()}</p>
+                        </div>
+                    </div>
+                </div>
+
                 {/* Activity Stats */}
                 <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-8">
                     <h2 className="text-xl font-bold text-slate-900 mb-6 pb-3 border-b border-slate-200">

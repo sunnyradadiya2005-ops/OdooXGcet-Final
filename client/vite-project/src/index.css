@@ -1,37 +1,157 @@
 @import "tailwindcss";
 
 @theme {
-  --font-sans: "DM Sans", system-ui, sans-serif;
-  --color-primary: #0d9488;
-  --color-primary-dark: #0f766e;
-  --color-accent: #f59e0b;
+  /* Typography - Modern, Clean Inter */
+  --font-sans: "Inter", system-ui, -apple-system, sans-serif;
+
+  /* Primary Palette - Teal */
+  --color-primary-50: #f0fdfa;
+  --color-primary-100: #ccfbf1;
+  --color-primary-200: #99f6e4;
+  --color-primary-300: #5eead4;
+  --color-primary-400: #2dd4bf;
+  --color-primary-500: #14b8a6;
+  --color-primary-600: #0d9488;  /* Main Brand Color */
+  --color-primary-700: #0f766e;
+  --color-primary-800: #115e59;
+  --color-primary-900: #134e4a;
+
+  /* Secondary/Neutral Palette - Slate */
+  --color-slate-50: #f8fafc;
+  --color-slate-100: #f1f5f9;
+  --color-slate-200: #e2e8f0;
+  --color-slate-300: #cbd5e1;
+  --color-slate-400: #94a3b8;
+  --color-slate-500: #64748b;
+  --color-slate-600: #475569;
+  --color-slate-700: #334155;
+  --color-slate-800: #1e293b;
+  --color-slate-900: #0f172a;
+
+  /* Accents */
+  --color-accent: #f59e0b; /* Amber for highlights */
+  --color-danger: #ef4444;
+  --color-success: #10b981;
 }
 
+/* Global Reset & Base Styles */
 body {
   margin: 0;
   min-height: 100vh;
   font-family: var(--font-sans);
+  background-color: var(--color-slate-50); /* Light Gray Background */
+  color: var(--color-slate-900);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
-/* Pointer cursor for all clickable elements */
+/* Scrollbar Styling */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--color-slate-300);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--color-slate-400);
+}
+
+/* Base Element Styling */
+h1, h2, h3, h4, h5, h6 {
+  color: var(--color-slate-900);
+  font-weight: 600; /* Semi-bold for headings */
+  letter-spacing: -0.025em; /* Tighter tracking for headings */
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+  transition: color 0.2s ease, background-color 0.2s ease;
+}
+
+button {
+  font-family: inherit;
+}
+
+/* Utility Classes for Common Patterns */
+.container-custom {
+  max-width: 1280px;
+  margin-left: auto;
+  margin-right: auto;
+  padding-left: 1.5rem;
+  padding-right: 1.5rem;
+}
+
+/* Card Style - Consistent Box Shadow & Radius */
+.card {
+  background-color: white;
+  border-radius: 0.75rem; /* rounded-xl */
+  border: 1px solid var(--color-slate-200);
+  box-shadow: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+}
+
+.card:hover {
+  box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+}
+
+/* Interactions */
+.hover-lift {
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.hover-lift:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+}
+
+/* Form Elements */
+.input-field {
+  width: 100%;
+  padding: 0.625rem 1rem;
+  border-radius: 0.5rem; /* rounded-lg */
+  border: 1px solid var(--color-slate-300);
+  background-color: white;
+  color: var(--color-slate-900);
+  transition: all 0.2s;
+}
+
+.input-field:focus {
+  outline: none;
+  border-color: var(--color-primary-500);
+  box-shadow: 0 0 0 3px var(--color-primary-100);
+}
+
+.btn-primary {
+  background-color: var(--color-primary-600);
+  color: white;
+  padding: 0.625rem 1.25rem;
+  border-radius: 0.5rem;
+  font-weight: 500;
+  transition: background-color 0.2s;
+}
+
+.btn-primary:hover {
+  background-color: var(--color-primary-700);
+}
+
+/* Cursors */
 button,
 a,
 [role="button"],
-[type="button"],
-[type="submit"],
-[type="reset"],
-select,
-label[for],
-input[type="checkbox"],
-input[type="radio"],
-summary,
-.cursor-pointer {
+input[type="submit"] {
   cursor: pointer;
 }
 
-/* Ensure disabled elements don't show pointer */
 button:disabled,
-a:disabled,
 [disabled] {
   cursor: not-allowed;
+  opacity: 0.6;
 }

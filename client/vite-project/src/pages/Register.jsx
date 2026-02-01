@@ -11,6 +11,7 @@ export default function Register() {
     email: '',
     password: '',
     confirmPassword: '',
+    referralCode: '',
   });
   const [errors, setErrors] = useState({});
   const [loading, setLoading] = useState(false);
@@ -85,6 +86,7 @@ export default function Register() {
         password: form.password,
         confirmPassword: form.confirmPassword,
         verificationToken,
+        referralCode: form.referralCode,
       });
       navigate('/shop');
     } catch (err) {
@@ -95,141 +97,185 @@ export default function Register() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-teal-600 px-4 py-6">
-      <div className="w-full max-w-2xl">
-        <div className="bg-white rounded-xl shadow-xl border border-slate-200 p-6">
-          {/* Logo inside card */}
-          <div className="text-center mb-4">
-            <Link to="/" className="text-2xl font-bold text-teal-600 hover:text-teal-700 transition-colors">
-              KirayaKart
+    <div className="min-h-screen flex items-center justify-center bg-slate-50 relative overflow-hidden px-4 py-12">
+      {/* Decorative Background Elements */}
+      <div className="absolute top-0 left-0 w-full h-full overflow-hidden pointer-events-none">
+        <div className="absolute top-10 left-10 w-96 h-96 bg-teal-500/10 rounded-full blur-3xl"></div>
+        <div className="absolute bottom-10 right-10 w-96 h-96 bg-teal-500/10 rounded-full blur-3xl"></div>
+      </div>
+
+      <div className="w-full max-w-2xl relative z-10">
+        <div className="bg-white rounded-2xl shadow-xl border border-slate-100 p-8 md:p-10 card">
+          <div className="text-center mb-8">
+            <Link to="/" className="inline-flex items-center gap-2 group">
+              <div className="w-10 h-10 bg-teal-600 rounded-lg flex items-center justify-center text-white font-bold text-xl group-hover:bg-teal-700 transition-colors">
+                K
+              </div>
+              <span className="text-2xl font-bold text-slate-900 tracking-tight group-hover:text-teal-700 transition-colors">
+                KirayaKart
+              </span>
             </Link>
-            <p className="text-xs text-slate-500 mt-1">Customer Registration</p>
           </div>
 
-          <h1 className="text-lg font-bold text-slate-900 mb-1 text-center">Create your account</h1>
-          <p className="text-sm text-slate-600 mb-4 text-center">Rent products easily and securely</p>
+          <h1 className="text-2xl font-bold text-slate-900 mb-2 text-center">Create Account</h1>
+          <p className="text-slate-500 mb-8 text-center text-sm">Join purely rental marketplace</p>
 
-          <form onSubmit={handleSubmit} className="space-y-3">
+          <form onSubmit={handleSubmit} className="space-y-6">
             {errors.form && (
-              <div className="p-3 bg-red-50 border border-red-200 text-red-700 text-sm rounded-lg">{errors.form}</div>
+              <div className="p-4 bg-red-50 border border-red-100 text-red-600 text-sm rounded-lg flex items-center gap-2">
+                <svg className="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                {errors.form}
+              </div>
             )}
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1.5">First Name</label>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+              <div className="space-y-1.5">
+                <label className="block text-sm font-semibold text-slate-700">First Name</label>
                 <input
                   type="text"
                   value={form.firstName}
                   onChange={(e) => setForm({ ...form, firstName: e.target.value })}
-                  className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent"
+                  className="input-field"
+                  placeholder="John"
                 />
-                {errors.firstName && <p className="text-red-600 text-xs mt-1">{errors.firstName}</p>}
+                {errors.firstName && <p className="text-red-500 text-xs mt-1">{errors.firstName}</p>}
               </div>
-              <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1.5">Last Name</label>
+              <div className="space-y-1.5">
+                <label className="block text-sm font-semibold text-slate-700">Last Name</label>
                 <input
                   type="text"
                   value={form.lastName}
                   onChange={(e) => setForm({ ...form, lastName: e.target.value })}
-                  className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent"
+                  className="input-field"
+                  placeholder="Doe"
                 />
-                {errors.lastName && <p className="text-red-600 text-xs mt-1">{errors.lastName}</p>}
+                {errors.lastName && <p className="text-red-500 text-xs mt-1">{errors.lastName}</p>}
               </div>
             </div>
-            <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1.5">Email Address</label>
+
+            <div className="space-y-1.5">
+              <label className="block text-sm font-semibold text-slate-700">Email Address</label>
               <div className="flex gap-2">
-                <input
-                  type="email"
-                  value={form.email}
-                  disabled={isVerified}
-                  onChange={(e) => setForm({ ...form, email: e.target.value })}
-                  className="flex-1 px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent disabled:bg-slate-100"
-                />
+                <div className="relative flex-1">
+                  <input
+                    type="email"
+                    value={form.email}
+                    disabled={isVerified}
+                    onChange={(e) => setForm({ ...form, email: e.target.value })}
+                    className="input-field disabled:bg-slate-50 disabled:text-slate-500"
+                    placeholder="john@example.com"
+                  />
+                  {isVerified && (
+                     <span className="absolute right-3 top-1/2 -translate-y-1/2 text-green-500">
+                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>
+                     </span>
+                  )}
+                </div>
                 {!isVerified && !otpSent && (
                   <button
                     type="button"
                     onClick={handleVerifyEmail}
                     disabled={loading}
-                    className="px-4 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 disabled:opacity-50 disabled:cursor-not-allowed text-sm font-medium whitespace-nowrap transition-colors"
+                    className="px-5 py-2 bg-slate-800 text-white rounded-lg hover:bg-slate-700 disabled:opacity-50 disabled:cursor-not-allowed text-sm font-medium transition-colors"
                   >
                     Verify
                   </button>
                 )}
               </div>
-              {errors.email && <p className="text-red-600 text-xs mt-1">{errors.email}</p>}
-              {isVerified && <p className="text-green-600 text-xs mt-1 font-medium">✓ Email verified</p>}
+              {errors.email && <p className="text-red-500 text-xs mt-1">{errors.email}</p>}
+              {isVerified && <p className="text-green-600 text-xs mt-1 font-medium">Email verified successfully</p>}
             </div>
 
             {otpSent && !isVerified && (
-              <div className="p-3 bg-slate-50 rounded-lg border border-slate-200">
-                <label className="block text-sm font-medium text-slate-700 mb-1.5">Verification Code</label>
-                <div className="flex gap-2">
+              <div className="p-5 bg-slate-50 rounded-xl border border-slate-200 animate-in fade-in slide-in-from-top-2">
+                <label className="block text-sm font-semibold text-slate-700 mb-2">Enter Verification Code</label>
+                <div className="flex gap-3">
                   <input
                     type="text"
                     value={otp}
                     maxLength={6}
                     onChange={(e) => setOtp(e.target.value.replace(/\D/g, ''))}
-                    className="flex-1 px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent"
-                    placeholder="Enter 6-digit code"
+                    className="input-field text-center tracking-widest text-lg font-mono font-bold"
+                    placeholder="000000"
                   />
                   <button
                     type="button"
                     onClick={handleVerifyOtp}
                     disabled={loading}
-                    className="px-4 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 disabled:opacity-50 disabled:cursor-not-allowed text-sm font-medium whitespace-nowrap transition-colors"
+                    className="px-6 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 disabled:opacity-50 text-sm font-medium transition-colors"
                   >
-                    Submit
+                    Confirm
                   </button>
                 </div>
-                {errors.otp && <p className="text-red-600 text-xs mt-1">{errors.otp}</p>}
-                <p className="text-xs text-slate-500 mt-1">Check your email for the code</p>
+                {errors.otp && <p className="text-red-500 text-xs mt-2">{errors.otp}</p>}
+                <p className="text-xs text-slate-500 mt-2">We sent a 6-digit code to your email address.</p>
               </div>
             )}
 
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1.5">Password</label>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+              <div className="space-y-1.5">
+                <label className="block text-sm font-semibold text-slate-700">Password</label>
                 <input
                   type="password"
                   value={form.password}
                   onChange={(e) => setForm({ ...form, password: e.target.value })}
-                  className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent"
+                  className="input-field"
+                  placeholder="••••••••"
                 />
-                {errors.password && <p className="text-red-600 text-xs mt-1">{errors.password}</p>}
-                <p className="text-xs text-slate-500 mt-1">Min 6 chars, include a number</p>
+                {errors.password && <p className="text-red-500 text-xs mt-1">{errors.password}</p>}
               </div>
-              <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1.5">Confirm Password</label>
+              <div className="space-y-1.5">
+                <label className="block text-sm font-semibold text-slate-700">Confirm Password</label>
                 <input
                   type="password"
                   value={form.confirmPassword}
                   onChange={(e) => setForm({ ...form, confirmPassword: e.target.value })}
-                  className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent"
+                  className="input-field"
+                  placeholder="••••••••"
                 />
                 {errors.confirmPassword && (
-                  <p className="text-red-600 text-xs mt-1">{errors.confirmPassword}</p>
+                  <p className="text-red-500 text-xs mt-1">{errors.confirmPassword}</p>
                 )}
               </div>
+            </div>
+
+            <div className="space-y-1.5 pt-2">
+               <label className="block text-sm font-semibold text-slate-700">Referral Code (Optional)</label>
+               <input
+                 type="text"
+                 value={form.referralCode}
+                 onChange={(e) => setForm({ ...form, referralCode: e.target.value.toUpperCase() })}
+                 className="input-field uppercase tracking-wider font-mono placeholder:normal-case placeholder:font-sans"
+                 placeholder="Enter code (e.g. VEER123)"
+                 maxLength={10}
+               />
+               <p className="text-xs text-slate-500">Have a code? Enter it to get a welcome reward!</p>
             </div>
 
             <button
               type="submit"
               disabled={loading}
-              className="w-full py-2.5 bg-teal-600 text-white font-semibold rounded-lg hover:bg-teal-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              className="w-full btn-primary py-3 text-base shadow-lg shadow-teal-500/20 mt-4"
             >
-              {loading ? 'Creating account...' : 'Create Account'}
+              {loading ? (
+                <div className="flex items-center justify-center gap-2">
+                   <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                   <span>Creating Account...</span>
+                </div>
+              ) : 'Create Account'}
             </button>
           </form>
-          <div className="mt-5 pt-4 border-t border-slate-200">
-            <p className="text-center text-sm text-slate-600">
+
+          <div className="mt-8 pt-6 border-t border-slate-100 text-center space-y-3">
+            <p className="text-sm text-slate-600">
               Already have an account?{' '}
-              <Link to="/login" className="text-teal-600 font-semibold hover:text-teal-700 transition-colors">
+              <Link to="/login" className="text-teal-600 font-semibold hover:text-teal-700 hover:underline transition-all">
                 Sign In
               </Link>
             </p>
-            <p className="text-center text-sm text-slate-600 mt-2">
-              Want to rent out products?{' '}
-              <Link to="/register/vendor" className="text-teal-600 font-semibold hover:text-teal-700 transition-colors">
+            <p className="text-sm text-slate-600">
+              Want to sell on KirayaKart?{' '}
+              <Link to="/register/vendor" className="text-teal-600 font-semibold hover:text-teal-700 hover:underline transition-all">
                 Become a Vendor →
               </Link>
             </p>

@@ -107,24 +107,42 @@ export default function ErpDashboard() {
 
       <div className="flex justify-between items-center mb-8">
         <h1 className="text-3xl font-bold text-slate-900">Orders</h1>
-        <div className="flex gap-3">
-          <button
-            onClick={() => setView('kanban')}
-            className={`px-6 py-2.5 rounded-lg font-medium transition-colors ${view === 'kanban'
-              ? 'bg-teal-600 text-white shadow-sm'
-              : 'bg-white text-slate-700 border border-slate-300 hover:bg-slate-50'
-              }`}
-          >
-            Kanban
-          </button>
+        <div className="flex bg-white border border-slate-200 rounded-lg p-1 gap-1">
           <button
             onClick={() => setView('list')}
-            className={`px-6 py-2.5 rounded-lg font-medium transition-colors ${view === 'list'
-              ? 'bg-teal-600 text-white shadow-sm'
-              : 'bg-white text-slate-700 border border-slate-300 hover:bg-slate-50'
-              }`}
+            className={`p-2 rounded-md transition-all duration-200 flex items-center gap-2 ${
+              view === 'list'
+                ? 'bg-teal-50 text-teal-600 shadow-sm'
+                : 'text-slate-400 hover:text-slate-600 hover:bg-slate-50'
+            }`}
+            title="List View"
           >
-            List
+            {view === 'list' && (
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+              </svg>
+            )}
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+            </svg>
+          </button>
+          <button
+            onClick={() => setView('kanban')}
+            className={`p-2 rounded-md transition-all duration-200 flex items-center gap-2 ${
+              view === 'kanban'
+                ? 'bg-teal-50 text-teal-600 shadow-sm'
+                : 'text-slate-400 hover:text-slate-600 hover:bg-slate-50'
+            }`}
+            title="Kanban View"
+          >
+            {view === 'kanban' && (
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+              </svg>
+            )}
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 5a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1H5a1 1 0 01-1-1V5zm10 0a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1h-4a1 1 0 01-1-1V5zM4 15a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1H5a1 1 0 01-1-1v-4zm10 0a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1h-4a1 1 0 01-1-1v-4z" />
+            </svg>
           </button>
         </div>
       </div>

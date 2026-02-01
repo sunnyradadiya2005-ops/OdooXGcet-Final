@@ -52,6 +52,8 @@ userRoutes.get('/me', async (req, res) => {
       firstName: user.firstName,
       lastName: user.lastName,
       role: user.role,
+      referralCode: user.referralCode,
+      walletBalance: user.walletBalance,
       vendor: user.vendor ? { id: user.vendor.id, companyName: user.vendor.companyName } : null,
       createdAt: dbUser?.createdAt,
       ordersCount,
