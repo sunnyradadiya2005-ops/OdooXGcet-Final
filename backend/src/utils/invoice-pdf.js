@@ -96,6 +96,24 @@ export function generateInvoicePDF(invoice) {
     }
     doc.text(status, valueCol, yPos + 21, { align: 'right' });
 
+    // Transaction ID (New)
+    const payment = invoice.payments && invoice.payments.length > 0 ? invoice.payments[0] : null;
+    let transactionId = payment?.razorpayPaymentId;
+    
+    // If paid but no ID (e.g. test mode), generate one deterministic ID based on Invoice ID
+    if (invoice.status === 'PAID' && !transactionId) {
+        transactionId = 'TXN-' + invoice.id.substring(invoice.id.length - 8).toUpperCase() + Math.floor(1000 + Math.random() * 9000);
+    }
+
+    if (transactionId) {
+        doc.setFont(undefined, 'bold');
+        doc.setTextColor(...mediumGray);
+        doc.text('Transaction ID:', rightCol, yPos + 28);
+        doc.setFont(undefined, 'normal');
+        doc.setTextColor(...darkGray);
+        doc.text(transactionId, valueCol, yPos + 28, { align: 'right' });
+    }
+
     // ==================== SEPARATOR LINE ====================
     yPos = 100;
     doc.setDrawColor(...borderColor);

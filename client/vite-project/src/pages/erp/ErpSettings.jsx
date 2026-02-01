@@ -84,6 +84,11 @@ export default function ErpSettings() {
     setMessage('');
 
     try {
+      if (companyGST && companyGST.length !== 15) {
+        setMessage('Error: Company GST number must be exactly 15 characters');
+        setLoading(false);
+        return;
+      }
       await api.post('/settings/bulk', {
         settings: {
           company_name: companyName,
@@ -108,6 +113,11 @@ export default function ErpSettings() {
     try {
       const updates = { firstName, lastName };
       if (user.vendor) {
+        if (vendorGST && vendorGST.length !== 15) {
+          setMessage('Error: GST number must be exactly 15 characters');
+          setLoading(false);
+          return;
+        }
         updates.vendorCompanyName = vendorCompanyName;
         updates.vendorGST = vendorGST;
       }

@@ -39,6 +39,7 @@ export default function RegisterVendor() {
     if (!form.lastName.trim()) e.lastName = 'Last name required';
     if (!form.companyName.trim()) e.companyName = 'Company name required';
     if (!form.gstNumber.trim()) e.gstNumber = 'GST number required';
+    else if (form.gstNumber.trim().length !== 15) e.gstNumber = 'GST number must be exactly 15 characters';
     if (!form.category) e.category = 'Select a category';
     if (!form.email.trim()) e.email = 'Email required';
     else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) e.email = 'Invalid email';

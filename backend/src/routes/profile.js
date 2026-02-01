@@ -73,7 +73,12 @@ profileRoutes.put('/', async (req, res) => {
             
             // Company info
             if (vendorData.companyName) updateData.companyName = vendorData.companyName;
-            if (vendorData.gstNumber) updateData.gstNumber = vendorData.gstNumber;
+            if (vendorData.gstNumber) {
+                if (vendorData.gstNumber.trim().length !== 15) {
+                    return res.status(400).json({ error: 'GST number must be exactly 15 characters' });
+                }
+                updateData.gstNumber = vendorData.gstNumber;
+            }
             
             // Address
             if (vendorData.address !== undefined) updateData.address = vendorData.address;

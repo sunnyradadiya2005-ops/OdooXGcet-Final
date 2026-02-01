@@ -228,7 +228,7 @@ authRoutes.post(
     body('firstName').trim().notEmpty().withMessage('First name required'),
     body('lastName').trim().notEmpty().withMessage('Last name required'),
     body('companyName').trim().notEmpty().withMessage('Company name required'),
-    body('gstNumber').trim().notEmpty().withMessage('GST number required'),
+    body('gstNumber').trim().notEmpty().withMessage('GST number required').isLength({ min: 15, max: 15 }).withMessage('GST number must be 15 characters'),
     body('category').isIn(PRODUCT_CATEGORIES).withMessage('Invalid category'),
     body('email').isEmail().normalizeEmail(),
     body('verificationToken').notEmpty().withMessage('Email verification required'),

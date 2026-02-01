@@ -196,42 +196,18 @@ orderRoutes.post('/from-cart', requireRole('CUSTOMER'), async (req, res) => {
       vendorGroups[vid].push(ci);
     });
 
-    const orders = [];
-    for (const [vendorId, items] of Object.entries(vendorGroups)) {
-      // Check availability for all items before creating order
-      for (const ci of items) {
-        await checkAvailability(ci.productId, ci.startDate, ci.endDate, ci.quantity);
-      }
-
-      let subtotal = new Decimal(0);
-      let securityDeposit = new Decimal(0);
-      const orderItems = [];
-
-      for (const ci of items) {
+    const totalCartValue = cartItems.reduce((acc, ci) => {
         const days = Math.ceil((new Date(ci.endDate) - new Date(ci.startDate)) / (1000 * 60 * 60 * 24)) || 1;
         const unitPrice = new Decimal(ci.product.basePrice).mul(days);
-        const lineTotal = unitPrice.mul(ci.quantity);
-        subtotal = subtotal.add(lineTotal);
-        
-        // Calculate security deposit per product
-        const productDeposit = new Decimal(ci.product.depositAmount || 0).mul(ci.quantity);
-        securityDeposit = securityDeposit.add(productDeposit);
-        
-        orderItems.push({
-          productId: ci.productId,
-          variantId: ci.variantId,
-          quantity: ci.quantity,
-          startDate: ci.startDate,
-          endDate: ci.endDate,
-          unitPrice,
-          lineTotal,
-        });
-      }
+        return acc.add(unitPrice.mul(ci.quantity));
+      }, new Decimal(0));
 
-      const taxAmount = subtotal.mul(0.18);
-      let discountAmount = new Decimal(0);
+      const taxAmount = totalCartValue.mul(0.18);
+      const cartGrossTotal = totalCartValue.add(taxAmount);
+
+      let globalCoupon = null;
       if (couponCode) {
-        const coupon = await prisma.coupon.findFirst({
+        globalCoupon = await prisma.coupon.findFirst({
           where: {
             code: couponCode,
             isActive: true,
@@ -239,17 +215,64 @@ orderRoutes.post('/from-cart', requireRole('CUSTOMER'), async (req, res) => {
             validUntil: { gte: new Date() },
           },
         });
-        if (coupon) {
-          if (coupon.discountType === 'percent') {
-            discountAmount = subtotal.mul(Number(coupon.discountValue) / 100);
-            if (coupon.maxDiscount && discountAmount.gt(coupon.maxDiscount)) {
-              discountAmount = new Decimal(coupon.maxDiscount);
-            }
-          } else {
-            discountAmount = new Decimal(coupon.discountValue);
-          }
+
+        if (globalCoupon) {
+             if (globalCoupon.usageLimit && globalCoupon.usedCount >= globalCoupon.usageLimit) {
+                 globalCoupon = null; 
+             } else if (globalCoupon.minOrderAmount && cartGrossTotal.lt(globalCoupon.minOrderAmount)) {
+                 globalCoupon = null; 
+             } else {
+                 await prisma.coupon.update({
+                     where: { id: globalCoupon.id },
+                     data: { usedCount: { increment: 1 } }
+                 });
+             }
         }
       }
+
+      const orders = [];
+      for (const [vendorId, items] of Object.entries(vendorGroups)) {
+        for (const ci of items) {
+          await checkAvailability(ci.productId, ci.startDate, ci.endDate, ci.quantity);
+        }
+
+        let subtotal = new Decimal(0);
+        let securityDeposit = new Decimal(0);
+        const orderItems = [];
+
+        for (const ci of items) {
+          const days = Math.ceil((new Date(ci.endDate) - new Date(ci.startDate)) / (1000 * 60 * 60 * 24)) || 1;
+          const unitPrice = new Decimal(ci.product.basePrice).mul(days);
+          const lineTotal = unitPrice.mul(ci.quantity);
+          subtotal = subtotal.add(lineTotal);
+          
+          const productDeposit = new Decimal(ci.product.depositAmount || 0).mul(ci.quantity);
+          securityDeposit = securityDeposit.add(productDeposit);
+          
+          orderItems.push({
+            productId: ci.productId,
+            variantId: ci.variantId,
+            quantity: ci.quantity,
+            startDate: ci.startDate,
+            endDate: ci.endDate,
+            unitPrice,
+            lineTotal,
+          });
+        }
+
+        const taxAmountOrder = subtotal.mul(0.18);
+        let discountAmount = new Decimal(0);
+        
+        if (globalCoupon) {
+            if (globalCoupon.discountType === 'percent') {
+              discountAmount = subtotal.mul(Number(globalCoupon.discountValue) / 100);
+               if (globalCoupon.maxDiscount && discountAmount.gt(globalCoupon.maxDiscount)) {
+                 discountAmount = new Decimal(globalCoupon.maxDiscount);
+               }
+            } else {
+               discountAmount = new Decimal(globalCoupon.discountValue);
+            }
+        }
 
       const totalAmount = subtotal.add(taxAmount).sub(discountAmount).add(securityDeposit);
 

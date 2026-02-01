@@ -126,6 +126,11 @@ settingRoutes.post('/bulk', requireRole('ADMIN'), async (req, res) => {
 
         const updates = [];
         for (const [key, value] of Object.entries(settings)) {
+            // Validation
+            if (key === 'company_gst' && value && String(value).trim().length !== 15) {
+                return res.status(400).json({ error: 'Company GST number must be exactly 15 characters' });
+            }
+
             const existing = await prisma.setting.findUnique({ where: { key } });
             if (existing) {
                 updates.push(
