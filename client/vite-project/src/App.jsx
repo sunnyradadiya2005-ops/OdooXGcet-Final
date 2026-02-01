@@ -39,6 +39,16 @@ import ErpProductForm from './pages/erp/ErpProductForm';
 import ErpCustomers from './pages/erp/ErpCustomers';
 import ErpReports from './pages/erp/ErpReports';
 import ErpSettings from './pages/erp/ErpSettings';
+import AdminSettings from './pages/admin/AdminSettings';
+import AdminDashboard from './pages/admin/AdminDashboard';
+import AdminReports from './pages/admin/AdminReports';
+import AdminVendors from './pages/admin/AdminVendors';
+import AdminProducts from './pages/admin/AdminProducts';
+import AdminUsers from './pages/admin/AdminUsers';
+import AdminOrders from './pages/admin/AdminOrders';
+import AdminProfile from './pages/admin/AdminProfile';
+import VendorRoute from './components/VendorRoute';
+import AdminRoute from './components/AdminRoute';
 
 function CustomerLayout({ children }) {
   return (
@@ -132,18 +142,29 @@ export default function App() {
             }
           />
 
-          {/* ERP Routes */}
-          <Route path="/erp" element={<ErpDashboard />} />
-          <Route path="/erp/orders/new" element={<ErpNewOrder />} />
-          <Route path="/erp/orders/:id" element={<ErpOrderDetail />} />
-          <Route path="/erp/invoices" element={<ErpInvoices />} />
-          <Route path="/erp/invoices/:id" element={<ErpInvoiceDetail />} />
-          <Route path="/erp/products" element={<ErpProducts />} />
-          <Route path="/erp/products/new" element={<ErpProductForm />} />
-          <Route path="/erp/products/:id/edit" element={<ErpProductForm />} />
-          <Route path="/erp/customers" element={<ErpCustomers />} />
-          <Route path="/erp/reports" element={<ErpReports />} />
-          <Route path="/erp/settings" element={<ErpSettings />} />
+          {/* ERP Routes - Vendor Only */}
+          <Route path="/erp" element={<VendorRoute><ErpDashboard /></VendorRoute>} />
+          <Route path="/erp/orders/new" element={<VendorRoute><ErpNewOrder /></VendorRoute>} />
+          <Route path="/erp/orders/:id" element={<VendorRoute><ErpOrderDetail /></VendorRoute>} />
+          <Route path="/erp/invoices" element={<VendorRoute><ErpInvoices /></VendorRoute>} />
+          <Route path="/erp/invoices/:id" element={<VendorRoute><ErpInvoiceDetail /></VendorRoute>} />
+          <Route path="/erp/products" element={<VendorRoute><ErpProducts /></VendorRoute>} />
+          <Route path="/erp/products/new" element={<VendorRoute><ErpProductForm /></VendorRoute>} />
+          <Route path="/erp/products/:id/edit" element={<VendorRoute><ErpProductForm /></VendorRoute>} />
+          <Route path="/erp/customers" element={<VendorRoute><ErpCustomers /></VendorRoute>} />
+          <Route path="/erp/reports" element={<VendorRoute><ErpReports /></VendorRoute>} />
+          <Route path="/erp/settings" element={<VendorRoute><ErpSettings /></VendorRoute>} />
+          <Route path="/erp/profile" element={<VendorRoute><ErpSettings /></VendorRoute>} />
+
+          {/* Admin Routes - Admin Only */}
+          <Route path="/admin/dashboard" element={<AdminRoute><AdminDashboard /></AdminRoute>} />
+          <Route path="/admin/vendors" element={<AdminRoute><AdminVendors /></AdminRoute>} />
+          <Route path="/admin/products" element={<AdminRoute><AdminProducts /></AdminRoute>} />
+          <Route path="/admin/orders" element={<AdminRoute><AdminOrders /></AdminRoute>} />
+          <Route path="/admin/users" element={<AdminRoute><AdminUsers /></AdminRoute>} />
+          <Route path="/admin/reports" element={<AdminRoute><AdminReports /></AdminRoute>} />
+          <Route path="/admin/settings" element={<AdminRoute><AdminSettings /></AdminRoute>} />
+          <Route path="/admin/profile" element={<AdminRoute><AdminProfile /></AdminRoute>} />
 
           {/* Catch-all redirect */}
           <Route path="*" element={<Navigate to="/" replace />} />

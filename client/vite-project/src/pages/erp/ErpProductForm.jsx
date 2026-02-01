@@ -16,6 +16,7 @@ export default function ErpProductForm() {
         costPrice: '',
         basePrice: '',
         hourlyRate: '',
+        depositAmount: '',
         stockQty: 1,
         images: [],
         isActive: true,
@@ -38,6 +39,7 @@ export default function ErpProductForm() {
                         costPrice: r.data.costPrice || '',
                         basePrice: r.data.basePrice || '',
                         hourlyRate: r.data.hourlyRate || '',
+                        depositAmount: r.data.depositAmount || '',
                         stockQty: r.data.stockQty || 1,
                         images: r.data.images || [],
                         isActive: r.data.isActive ?? true,
@@ -63,6 +65,7 @@ export default function ErpProductForm() {
                 costPrice: form.costPrice ? parseFloat(form.costPrice) : null,
                 basePrice: parseFloat(form.basePrice),
                 hourlyRate: form.hourlyRate ? parseFloat(form.hourlyRate) : null,
+                depositAmount: form.depositAmount ? parseFloat(form.depositAmount) : 0,
                 stockQty: parseInt(form.stockQty, 10) || 1,
             };
 
@@ -81,9 +84,42 @@ export default function ErpProductForm() {
         }
     };
 
-    const addImage = () => {
-        const url = prompt('Enter image URL:');
-        if (url) setForm({ ...form, images: [...form.images, url] });
+    const [uploading, setUploading] = useState(false);
+
+    const handleImageUpload = async (e) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+
+        // Validate file type
+        if (!file.type.startsWith('image/')) {
+            alert('Please select an image file');
+            return;
+        }
+
+        // Validate file size (5MB max)
+        if (file.size > 5 * 1024 * 1024) {
+            alert('Image size must be less than 5MB');
+            return;
+        }
+
+        setUploading(true);
+        try {
+            const formData = new FormData();
+            formData.append('image', file);
+
+            const response = await api.post('/products/upload-image', formData, {
+                headers: {
+                    'Content-Type': 'multipart/form-data',
+                },
+            });
+
+            const imagePath = `http://localhost:5000${response.data.imagePath}`;
+            setForm({ ...form, images: [...form.images, imagePath] });
+        } catch (err) {
+            alert(err.response?.data?.error || 'Failed to upload image');
+        } finally {
+            setUploading(false);
+        }
     };
 
     const removeImage = (idx) => {
@@ -194,6 +230,20 @@ export default function ErpProductForm() {
                             />
                         </div>
                     </div>
+                    <div className="grid grid-cols-2 gap-4">
+                        <div>
+                            <label className="block text-sm font-medium text-slate-700 mb-1">Security Deposit (₹/item)</label>
+                            <input
+                                type="number"
+                                step="0.01"
+                                min="0"
+                                value={form.depositAmount}
+                                onChange={(e) => setForm({ ...form, depositAmount: e.target.value })}
+                                className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-teal-500"
+                                placeholder="Refundable deposit per item"
+                            />
+                        </div>
+                    </div>
 
                     <div className="grid grid-cols-2 gap-4">
                         <div>
@@ -221,37 +271,72 @@ export default function ErpProductForm() {
                     </div>
 
                     <div>
-                        <label className="block text-sm font-medium text-slate-700 mb-1">Images</label>
-                        <div className="space-y-2">
-                            {form.images.map((img, i) => (
-                                <div key={i} className="flex items-center gap-2">
-                                    <input
-                                        type="text"
-                                        value={img}
-                                        onChange={(e) => {
-                                            const newImages = [...form.images];
-                                            newImages[i] = e.target.value;
-                                            setForm({ ...form, images: newImages });
-                                        }}
-                                        className="flex-1 px-4 py-2 border rounded-lg"
-                                    />
-                                    <button
-                                        type="button"
-                                        onClick={() => removeImage(i)}
-                                        className="px-3 py-2 text-red-600 border border-red-600 rounded-lg hover:bg-red-50"
-                                    >
-                                        Remove
-                                    </button>
-                                </div>
-                            ))}
-                            <button
-                                type="button"
-                                onClick={addImage}
-                                className="px-4 py-2 text-teal-600 border border-teal-600 rounded-lg hover:bg-teal-50"
+                        <label className="block text-sm font-medium text-slate-700 mb-2">Product Images</label>
+                        
+                        {/* Image Upload Button */}
+                        <div className="mb-4">
+                            <input
+                                type="file"
+                                accept="image/*"
+                                onChange={handleImageUpload}
+                                disabled={uploading}
+                                className="hidden"
+                                id="image-upload"
+                            />
+                            <label
+                                htmlFor="image-upload"
+                                className={`inline-flex items-center px-4 py-2 border border-teal-600 text-teal-600 rounded-lg hover:bg-teal-50 cursor-pointer transition-colors ${
+                                    uploading ? 'opacity-50 cursor-not-allowed' : ''
+                                }`}
                             >
-                                + Add Image URL
-                            </button>
+                                {uploading ? (
+                                    <>
+                                        <svg className="animate-spin -ml-1 mr-2 h-4 w-4" fill="none" viewBox="0 0 24 24">
+                                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                        </svg>
+                                        Uploading...
+                                    </>
+                                ) : (
+                                    <>
+                                        <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                                        </svg>
+                                        Upload Image
+                                    </>
+                                )}
+                            </label>
+                            <p className="text-xs text-slate-500 mt-1">Max 5MB • JPG, PNG, GIF, WebP</p>
                         </div>
+
+                        {/* Image Previews */}
+                        {form.images.length > 0 && (
+                            <div className="grid grid-cols-3 gap-4">
+                                {form.images.map((img, i) => (
+                                    <div key={i} className="relative group">
+                                        <img
+                                            src={img}
+                                            alt={`Product ${i + 1}`}
+                                            className="w-full h-32 object-cover rounded-lg border"
+                                        />
+                                        <button
+                                            type="button"
+                                            onClick={() => removeImage(i)}
+                                            className="absolute top-2 right-2 bg-red-500 text-white p-1.5 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+                                        >
+                                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                                            </svg>
+                                        </button>
+                                        {i === 0 && (
+                                            <span className="absolute bottom-2 left-2 bg-teal-600 text-white text-xs px-2 py-1 rounded">
+                                                Primary
+                                            </span>
+                                        )}
+                                    </div>
+                                ))}
+                            </div>
+                        )}
                     </div>
                 </div>
 

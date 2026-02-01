@@ -18,10 +18,15 @@ export default function ProductDetail() {
   const [adding, setAdding] = useState(false);
   const [error, setError] = useState('');
 
+  const [availableQty, setAvailableQty] = useState(0);
+
   useEffect(() => {
     api
       .get(`/products/${id}`)
-      .then((r) => setProduct(r.data))
+      .then((r) => {
+        setProduct(r.data);
+        setAvailableQty(r.data.stockQty);
+      })
       .catch(() => setProduct(null))
       .finally(() => setLoading(false));
   }, [id]);
@@ -29,6 +34,7 @@ export default function ProductDetail() {
   useEffect(() => {
     if (!product || !startDate || !endDate) {
       setPrice(0);
+      if (product) setAvailableQty(product.stockQty);
       return;
     }
     const start = new Date(`${startDate}T${startTime}`);
@@ -37,6 +43,18 @@ export default function ProductDetail() {
       setPrice(0);
       return;
     }
+
+    // Check availability for selected dates
+    api.get(`/products/${id}/availability?startDate=${start.toISOString()}&endDate=${end.toISOString()}`)
+      .then((r) => {
+        setAvailableQty(r.data.available);
+        // If current quantity exceeds available, reset to 1 or available
+        if (quantity > r.data.available) {
+          setQuantity(Math.max(1, Math.min(quantity, r.data.available)));
+        }
+      })
+      .catch((err) => console.error('Availability check failed:', err));
+
     const diffMs = end - start;
     const diffHours = diffMs / (1000 * 60 * 60);
     const diffDays = Math.ceil(diffMs / (1000 * 60 * 60 * 24)) || 1;
@@ -53,7 +71,7 @@ export default function ProductDetail() {
       }
     }
     setPrice(total * quantity);
-  }, [product, startDate, startTime, endDate, endTime, quantity]);
+  }, [product, startDate, startTime, endDate, endTime, quantity, id]);
 
   const handleAddToCart = async () => {
     if (!user) return navigate('/login');
@@ -67,6 +85,19 @@ export default function ProductDetail() {
       setError('End date must be after start date');
       return;
     }
+    
+    // Final availability check before adding
+    try {
+      const availRes = await api.get(`/products/${id}/availability?startDate=${start.toISOString()}&endDate=${end.toISOString()}`);
+      if (availRes.data.available < quantity) {
+        setError(`Only ${availRes.data.available} units available for these dates`);
+        setAvailableQty(availRes.data.available);
+        return;
+      }
+    } catch (err) {
+      console.error(err);
+    }
+
     setError('');
     setAdding(true);
     try {
@@ -97,7 +128,7 @@ export default function ProductDetail() {
   const datesValid = startDate && endDate;
   const start = new Date(`${startDate}T${startTime}`);
   const end = new Date(`${endDate}T${endTime}`);
-  const canAdd = datesValid && end > start;
+  const canAdd = datesValid && end > start && availableQty > 0;
 
   const tomorrow = new Date();
   tomorrow.setDate(tomorrow.getDate() + 1);
@@ -135,12 +166,12 @@ export default function ProductDetail() {
               )}
             </p>
             <p className="text-sm mt-2">
-              {product.stockQty > 0 ? (
-                <span className={product.stockQty <= 5 ? 'text-orange-600 font-medium' : 'text-green-600 font-medium'}>
-                  ✓ {product.stockQty} units available
+              {availableQty > 0 ? (
+                <span className={availableQty <= 5 ? 'text-orange-600 font-medium' : 'text-green-600 font-medium'}>
+                  ✓ {availableQty} units available {datesValid ? 'for selected dates' : '(Total Fleet)'}
                 </span>
               ) : (
-                <span className="text-red-600 font-medium">✗ Out of stock</span>
+                <span className="text-red-600 font-medium">✗ Out of stock {datesValid ? 'for selected dates' : ''}</span>
               )}
             </p>
           </div>
@@ -189,22 +220,22 @@ export default function ProductDetail() {
             <div>
               <div className="flex justify-between items-center mb-1">
                 <label className="block text-sm font-medium text-slate-700">Quantity</label>
-                <span className={`text-xs font-medium ${product.stockQty > 0 ? 'text-teal-600' : 'text-red-600'}`}>
-                  {product.stockQty > 0 ? `${product.stockQty} items available` : 'Out of Stock'}
+                <span className={`text-xs font-medium ${availableQty > 0 ? 'text-teal-600' : 'text-red-600'}`}>
+                  {availableQty > 0 ? `${availableQty} items available` : 'Out of Stock'}
                 </span>
               </div>
               <div className="flex items-center gap-2">
                 <button
                   onClick={() => setQuantity(Math.max(1, quantity - 1))}
-                  disabled={product.stockQty <= 0}
+                  disabled={availableQty <= 0}
                   className="w-10 h-10 border rounded-lg disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   −
                 </button>
                 <span className="w-12 text-center">{quantity}</span>
                 <button
-                  onClick={() => setQuantity(Math.min(product.stockQty, quantity + 1))}
-                  disabled={product.stockQty <= 0 || quantity >= product.stockQty}
+                  onClick={() => setQuantity(Math.min(availableQty, quantity + 1))}
+                  disabled={availableQty <= 0 || quantity >= availableQty}
                   className="w-10 h-10 border rounded-lg disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   +
@@ -220,20 +251,20 @@ export default function ProductDetail() {
               </p>
             </div>
 
-            {product.stockQty > 0 ? (
+            {availableQty > 0 ? (
               <button
                 onClick={handleAddToCart}
                 disabled={!canAdd || adding}
                 className="mt-6 w-full py-3 bg-teal-600 text-white font-medium rounded-lg hover:bg-teal-700 disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                {adding ? 'Adding...' : canAdd ? 'Add to Cart' : 'Select dates to add to cart'}
+                {adding ? 'Adding...' : canAdd ? 'Add to Cart' : datesValid ? 'Sold Out for dates' : 'Select dates to add to cart'}
               </button>
             ) : (
               <button
                 disabled
                 className="mt-6 w-full py-3 bg-red-50 text-red-600 border border-red-200 font-medium rounded-lg cursor-not-allowed"
               >
-                Sold Out
+                Sold Out {datesValid ? 'for selected dates' : ''}
               </button>
             )}
           </div>

@@ -79,14 +79,27 @@ model EmailVerification {
 }
 
 model Vendor {
-  id              String   @id @default(cuid())
-  userId          String   @unique @map("user_id")
-  companyName     String   @map("company_name")
-  gstNumber       String   @map("gst_number")
-  category        String   // predefined product category
-  logoUrl         String?  @map("logo_url")
-  createdAt       DateTime @default(now()) @map("created_at")
-  updatedAt       DateTime @updatedAt @map("updated_at")
+  id                      String   @id @default(cuid())
+  userId                  String   @unique @map("user_id")
+  companyName             String   @map("company_name")
+  gstNumber               String   @map("gst_number")
+  category                String   // predefined product category
+  logoUrl                 String?  @map("logo_url")
+  address                 String?
+  city                    String?
+  state                   String?
+  zipCode                 String?  @map("zip_code")
+  country                 String?  @default("India")
+  phone                   String?
+  website                 String?
+  bankName                String?  @map("bank_name")
+  bankAccount             String?  @map("bank_account")
+  ifscCode                String?  @map("ifsc_code")
+  enableLateFee           Boolean  @default(false) @map("enable_late_fee")
+  lateFeeAmount           Decimal  @default(0) @map("late_fee_amount") @db.Decimal(12, 2) // Per hour penalty
+  minPaymentPercent       Decimal  @default(50) @map("min_payment_percent") @db.Decimal(5, 2) // Minimum % for partial payment
+  createdAt               DateTime @default(now()) @map("created_at")
+  updatedAt               DateTime @updatedAt @map("updated_at")
 
   user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   products        Product[]
@@ -118,6 +131,7 @@ model Product {
   costPrice   Decimal? @map("cost_price") @db.Decimal(12, 2) // wholesale/purchase cost
   basePrice   Decimal  @map("base_price") @db.Decimal(12, 2) // per day
   hourlyRate  Decimal? @map("hourly_rate") @db.Decimal(12, 2)
+  depositAmount Decimal @default(0) @map("deposit_amount") @db.Decimal(12, 2) // security deposit per item
   stockQty    Int      @default(1) @map("stock_qty")
   images      String[] @default([]) // URLs
   isActive    Boolean  @default(true) @map("is_active")
@@ -439,4 +453,21 @@ model Coupon {
   createdAt     DateTime  @default(now()) @map("created_at")
 
   @@index([code])
+  @@map("coupons")
+}
+
+// ============ SYSTEM SETTINGS ============
+
+model SystemSetting {
+  id          String   @id @default(cuid())
+  key         String   @unique
+  value       String   // JSON string for complex values
+  dataType    String   // "string", "number", "boolean", "json"
+  category    String   // "general", "tax", "payment"
+  description String?
+  isPublic    Boolean  @default(false) // If customers can see it
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  @@map("system_settings")
 }

@@ -45,8 +45,13 @@ export default function Cart() {
   const tax = subtotal * 0.18;
   const total = subtotal + tax - couponDiscount;
 
-  const handleUpdateQty = async (id, qty) => {
+  const handleUpdateQty = async (id, qty, maxStock) => {
     if (qty < 1) return;
+    // Check if quantity exceeds available stock
+    if (maxStock && qty > maxStock) {
+      alert(`Only ${maxStock} items available in stock`);
+      return;
+    }
     try {
       await api.patch(`/cart/${id}`, { quantity: qty });
       setItems((prev) =>
@@ -137,6 +142,9 @@ export default function Cart() {
               const days =
                 Math.ceil((new Date(item.endDate) - new Date(item.startDate)) / (1000 * 60 * 60 * 24)) || 1;
               const lineTotal = (item.product?.basePrice || 0) * days * item.quantity;
+              const availableStock = item.product?.stockQty || 0;
+              const isAtStockLimit = item.quantity >= availableStock;
+              
               return (
                 <div
                   key={item.id}
@@ -156,18 +164,25 @@ export default function Cart() {
                     <p className="text-sm text-slate-600 mt-1">
                       ₹{item.product?.basePrice}/day × {item.quantity} = ₹{lineTotal}
                     </p>
+                    {availableStock > 0 && (
+                      <p className="text-xs text-slate-500 mt-1">
+                        {availableStock} available in stock
+                      </p>
+                    )}
                   </div>
                   <div className="flex items-center gap-2">
                     <button
-                      onClick={() => handleUpdateQty(item.id, item.quantity - 1)}
-                      className="w-8 h-8 border rounded"
+                      onClick={() => handleUpdateQty(item.id, item.quantity - 1, availableStock)}
+                      className="w-8 h-8 border rounded hover:bg-slate-50"
                     >
                       −
                     </button>
                     <span className="w-8 text-center">{item.quantity}</span>
                     <button
-                      onClick={() => handleUpdateQty(item.id, item.quantity + 1)}
-                      className="w-8 h-8 border rounded"
+                      onClick={() => handleUpdateQty(item.id, item.quantity + 1, availableStock)}
+                      disabled={isAtStockLimit}
+                      className="w-8 h-8 border rounded hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                      title={isAtStockLimit ? `Only ${availableStock} available` : ''}
                     >
                       +
                     </button>

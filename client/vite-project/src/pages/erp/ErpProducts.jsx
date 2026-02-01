@@ -6,6 +6,8 @@ import ErpLayout from '../../components/ErpLayout';
 export default function ErpProducts() {
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [showConfirmModal, setShowConfirmModal] = useState(false);
+  const [productToToggle, setProductToToggle] = useState(null);
 
   const fetchProducts = () => {
     api
@@ -19,22 +21,41 @@ export default function ErpProducts() {
     fetchProducts();
   }, []);
 
+  const handleStatusClick = (product) => {
+    // If product is active, show confirmation modal before disabling
+    if (product.isActive) {
+      setProductToToggle(product);
+      setShowConfirmModal(true);
+    } else {
+      // If product is inactive, enable it directly without confirmation
+      toggleActive(product.id, product.isActive);
+    }
+  };
+
   const toggleActive = async (id, isActive) => {
     try {
       await api.patch(`/products/${id}`, { isActive: !isActive });
       fetchProducts();
+      setShowConfirmModal(false);
+      setProductToToggle(null);
     } catch (err) {
       alert(err.response?.data?.error || 'Failed to update product');
     }
   };
 
   const handleDelete = async (id, name) => {
-    if (!confirm(`Delete product "${name}"?`)) return;
+    if (!confirm(`Permanently delete product "${name}"? This action cannot be undone.`)) return;
     try {
-      await api.patch(`/products/${id}`, { isActive: false });
+      await api.delete(`/products/${id}`);
       fetchProducts();
     } catch (err) {
       alert(err.response?.data?.error || 'Failed to delete product');
+    }
+  };
+
+  const handleConfirmDisable = () => {
+    if (productToToggle) {
+      toggleActive(productToToggle.id, productToToggle.isActive);
     }
   };
 
@@ -84,10 +105,14 @@ export default function ErpProducts() {
                       {p.costPrice ? `₹${Number(p.costPrice).toFixed(2)}` : '-'}
                     </td>
                     <td className="px-6 py-4 text-sm text-slate-900 font-medium">₹{Number(p.basePrice).toFixed(2)}</td>
-                    <td className="px-6 py-4 text-sm text-slate-700">{p.stockQty}</td>
+                    <td className="px-6 py-4 text-slate-600">
+                      <span className="font-medium text-teal-600">{p.availableQty ?? p.stockQty}</span>
+                      <span className="text-slate-400 mx-1">/</span>
+                      <span className="font-medium">{p.stockQty}</span>
+                    </td>
                     <td className="px-6 py-4">
                       <button
-                        onClick={() => toggleActive(p.id, p.isActive)}
+                        onClick={() => handleStatusClick(p)}
                         className={`px-3 py-1 text-xs font-medium rounded-full cursor-pointer transition-colors ${p.isActive
                             ? 'bg-green-100 text-green-700 hover:bg-green-200'
                             : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
@@ -125,6 +150,47 @@ export default function ErpProducts() {
               </Link>
             </div>
           )}
+        </div>
+      )}
+
+      {/* Confirmation Modal */}
+      {showConfirmModal && productToToggle && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl max-w-md w-full p-6 shadow-2xl">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-12 h-12 bg-amber-100 rounded-full flex items-center justify-center">
+                <svg className="w-6 h-6 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                </svg>
+              </div>
+              <h3 className="text-xl font-bold text-slate-900">Disable Product?</h3>
+            </div>
+            
+            <p className="text-slate-600 mb-2">
+              Are you sure you want to disable <span className="font-semibold text-slate-900">"{productToToggle.name}"</span>?
+            </p>
+            <p className="text-sm text-slate-500 mb-6">
+              This product will be hidden from customers until you enable it again. You can re-enable it anytime from this page.
+            </p>
+
+            <div className="flex gap-3">
+              <button
+                onClick={() => {
+                  setShowConfirmModal(false);
+                  setProductToToggle(null);
+                }}
+                className="flex-1 px-4 py-2.5 border border-slate-300 text-slate-700 rounded-lg hover:bg-slate-50 font-medium transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleConfirmDisable}
+                className="flex-1 px-4 py-2.5 bg-red-600 text-white rounded-lg hover:bg-red-700 font-medium transition-colors"
+              >
+                Disable Product
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </ErpLayout>

@@ -12,3 +12,26 @@ body {
   min-height: 100vh;
   font-family: var(--font-sans);
 }
+
+/* Pointer cursor for all clickable elements */
+button,
+a,
+[role="button"],
+[type="button"],
+[type="submit"],
+[type="reset"],
+select,
+label[for],
+input[type="checkbox"],
+input[type="radio"],
+summary,
+.cursor-pointer {
+  cursor: pointer;
+}
+
+/* Ensure disabled elements don't show pointer */
+button:disabled,
+a:disabled,
+[disabled] {
+  cursor: not-allowed;
+}

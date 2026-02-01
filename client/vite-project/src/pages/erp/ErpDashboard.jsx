@@ -126,12 +126,6 @@ export default function ErpDashboard() {
           >
             List
           </button>
-          <Link
-            to="/erp/orders/new"
-            className="px-6 py-2.5 bg-teal-600 text-white rounded-lg hover:bg-teal-700 font-medium transition-colors"
-          >
-            + New Order
-          </Link>
         </div>
       </div>
 

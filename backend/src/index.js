@@ -1,6 +1,8 @@
 import 'dotenv/config';
 import express from 'express';
 import cors from 'cors';
+import path from 'path';
+import { fileURLToPath } from 'url';
 import { authRoutes } from './routes/auth.js';
 import { productRoutes } from './routes/products.js';
 import { cartRoutes } from './routes/cart.js';
@@ -13,14 +15,23 @@ import { couponRoutes } from './routes/coupons.js';
 import { wishlistRoutes } from './routes/wishlist.js';
 import { settingRoutes } from './routes/settings.js';
 import { profileRoutes } from './routes/profile.js';
+import { analyticsRoutes } from './routes/analytics.js';
+import adminRoutes from './routes/admin.js';
 import { exportRoutes } from './routes/exports.js';
+import { customerRoutes } from './routes/customers.js';
 import { startScheduler } from './jobs/scheduler.js';
 
 const app = express();
 const PORT = process.env.PORT || 5000;
 
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
 app.use(cors({ origin: process.env.FRONTEND_URL || 'http://localhost:5173', credentials: true }));
 app.use(express.json());
+
+// Serve uploaded files statically
+app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
 
 // Health check
 app.get('/api/health', (req, res) => res.json({ ok: true, message: 'KirayaKart API' }));
@@ -38,7 +49,10 @@ app.use('/api/coupons', couponRoutes);
 app.use('/api/wishlist', wishlistRoutes);
 app.use('/api/settings', settingRoutes);
 app.use('/api/profile', profileRoutes);
+app.use('/api/analytics', analyticsRoutes);
+app.use('/api/admin', adminRoutes);
 app.use('/api/exports', exportRoutes);
+app.use('/api/customers', customerRoutes);
 
 // 404 handler
 app.use((req, res) => res.status(404).json({ error: 'Not found' }));

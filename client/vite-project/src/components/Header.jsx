@@ -1,13 +1,15 @@
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import api from '../lib/api';
 import { useState, useEffect, useRef } from 'react';
 
 export default function Header() {
   const { user, logout } = useAuth();
+  const navigate = useNavigate();
   const [cartCount, setCartCount] = useState(0);
   const [wishlistCount, setWishlistCount] = useState(0);
   const [showProfileDropdown, setShowProfileDropdown] = useState(false);
+  const [fullUserData, setFullUserData] = useState(null);
   const dropdownRef = useRef(null);
 
   // Function to fetch and update cart count
@@ -34,10 +36,20 @@ export default function Header() {
     }
   };
 
+  // Function to fetch full user data
+  const fetchFullUserData = () => {
+    if (user) {
+      api.get('/users/me')
+        .then((r) => setFullUserData(r.data))
+        .catch(() => setFullUserData(null));
+    }
+  };
+
   // Initial fetch
   useEffect(() => {
     fetchCartCount();
     fetchWishlistCount();
+    fetchFullUserData();
   }, [user]);
 
   // Listen for cart/wishlist update events
@@ -167,7 +179,11 @@ export default function Header() {
                                 <div className="flex justify-between">
                                   <span className="text-slate-600">Member Since:</span>
                                   <span className="font-medium text-slate-900">
-                                    {new Date(user.createdAt).toLocaleDateString()}
+                                    {fullUserData?.createdAt ? new Date(fullUserData.createdAt).toLocaleDateString('en-US', {
+                                      year: 'numeric',
+                                      month: 'long',
+                                      day: 'numeric'
+                                    }) : 'N/A'}
                                   </span>
                                 </div>
                               </div>
@@ -193,6 +209,7 @@ export default function Header() {
                                 onClick={() => {
                                   setShowProfileDropdown(false);
                                   logout();
+                                  navigate('/');
                                 }}
                                 className="w-full flex items-center gap-2 px-3 py-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors font-medium"
                               >
@@ -213,7 +230,10 @@ export default function Header() {
                         Dashboard
                       </Link>
                       <button
-                        onClick={logout}
+                        onClick={() => {
+                          logout();
+                          navigate('/');
+                        }}
                         className="text-base text-slate-700 hover:text-red-600 transition-colors font-medium"
                       >
                         Logout

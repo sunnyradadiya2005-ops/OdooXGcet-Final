@@ -1,11 +1,11 @@
 import { Router } from 'express';
-import { body, param } from 'express-validator';
+import { body, param, validationResult } from 'express-validator';
 import prisma from '../lib/prisma.js';
 import { authenticate, requireRole } from '../middleware/auth.js';
 
 export const cartRoutes = Router();
 cartRoutes.use(authenticate);
-cartRoutes.use(requireRole('CUSTOMER'));
+// cartRoutes.use(requireRole('CUSTOMER'));
 
 cartRoutes.get('/', async (req, res) => {
   try {
@@ -34,22 +34,36 @@ cartRoutes.get('/', async (req, res) => {
 cartRoutes.post(
   '/',
   [
-    body('productId').notEmpty(),
-    body('startDate').isISO8601(),
-    body('endDate').isISO8601(),
+    body('productId').notEmpty().withMessage('ProductId is required'),
+    body('startDate').isISO8601().withMessage('Invalid start date'),
+    body('endDate').isISO8601().withMessage('Invalid end date'),
     body('quantity').optional().isInt({ min: 1 }).toInt(),
     body('variantId').optional(),
   ],
   async (req, res) => {
+    // Check for validation errors
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      console.error('Cart Validation Error:', errors.array());
+      return res.status(400).json({ error: errors.array()[0].msg, details: errors.array() });
+    }
+
     try {
+      console.log('Cart POST Body:', req.body);
       const { productId, startDate, endDate, quantity = 1, variantId } = req.body;
       const start = new Date(startDate);
       const end = new Date(endDate);
-      if (end <= start) return res.status(400).json({ error: 'End date must be after start date' });
+      if (end <= start) {
+        console.error('Cart Error: End date <= Start date');
+        return res.status(400).json({ error: 'End date must be after start date' });
+      }
 
       const product = await prisma.product.findUnique({ where: { id: productId } });
       if (!product) return res.status(404).json({ error: 'Product not found' });
-      if (!product.isActive) return res.status(400).json({ error: 'Product not available' });
+      if (!product.isActive) {
+        console.error('Cart Error: Product inactive');
+        return res.status(400).json({ error: 'Product not available' });
+      }
 
       const existing = await prisma.cartItem.findFirst({
         where: {

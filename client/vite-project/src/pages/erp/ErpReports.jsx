@@ -60,7 +60,7 @@ export default function ErpReports() {
         </div>
         <div className="flex gap-3 items-end">
           <a
-            href={`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/exports/revenue/pdf?startDate=${startDate}&endDate=${endDate}`}
+            href={`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/exports/revenue?format=pdf&startDate=${startDate}&endDate=${endDate}`}
             target="_blank"
             rel="noopener noreferrer"
             className="px-6 py-2.5 bg-red-600 text-white rounded-lg hover:bg-red-700 text-sm font-medium transition-colors"
@@ -68,7 +68,7 @@ export default function ErpReports() {
             📄 Export PDF
           </a>
           <a
-            href={`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/exports/revenue/csv?startDate=${startDate}&endDate=${endDate}`}
+            href={`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/exports/revenue?format=csv&startDate=${startDate}&endDate=${endDate}`}
             download
             className="px-6 py-2.5 bg-green-600 text-white rounded-lg hover:bg-green-700 text-sm font-medium transition-colors"
           >
@@ -109,7 +109,7 @@ export default function ErpReports() {
             <div className="flex justify-between items-center mb-4">
               <h2 className="font-semibold text-slate-800">Most Rented Products</h2>
               <a
-                href={`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/exports/most-rented/csv?startDate=${startDate}&endDate=${endDate}`}
+                href={`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/exports/products?format=csv&startDate=${startDate}&endDate=${endDate}`}
                 download
                 className="px-3 py-1 bg-green-600 text-white rounded text-sm hover:bg-green-700"
               >
@@ -134,7 +134,7 @@ export default function ErpReports() {
               <div className="flex justify-between items-center mb-4">
                 <h2 className="font-semibold text-slate-800">Vendor Earnings</h2>
                 <a
-                  href={`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/exports/vendor-earnings/csv?startDate=${startDate}&endDate=${endDate}`}
+                  href={`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/exports/vendors?format=csv&startDate=${startDate}&endDate=${endDate}`}
                   download
                   className="px-3 py-1 bg-green-600 text-white rounded text-sm hover:bg-green-700"
                 >

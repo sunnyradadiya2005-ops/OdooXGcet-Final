@@ -39,3 +39,27 @@ export const requireVendor = async (req, res, next) => {
   if (!req.user?.vendor) return res.status(403).json({ error: 'Vendor profile required' });
   next();
 };
+
+// Optional authentication - doesn't fail if no token provided
+export const optionalAuth = async (req, res, next) => {
+  try {
+    const authHeader = req.headers.authorization;
+    if (!authHeader?.startsWith('Bearer ')) {
+      // No token provided, continue without user
+      return next();
+    }
+    const token = authHeader.split(' ')[1];
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    const user = await prisma.user.findUnique({
+      where: { id: decoded.userId },
+      include: { vendor: true },
+    });
+    if (user) {
+      req.user = user;
+    }
+    next();
+  } catch (err) {
+    // Token invalid or expired, continue without user
+    next();
+  }
+};

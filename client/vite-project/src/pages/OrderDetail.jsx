@@ -39,9 +39,15 @@ export default function OrderDetail() {
     );
   }
 
+  // Check if payment is needed
+  // Only show Pay Now if:
+  // 1. User is a customer
+  // 2. Order is in a payable status
+  // 3. Either no invoice exists OR invoice is not fully paid
   const needsPayment =
     user.role === 'CUSTOMER' &&
-    ['RENTAL_ORDER', 'CONFIRMED', 'PICKED_UP'].includes(order.status);
+    ['RENTAL_ORDER', 'CONFIRMED', 'PICKED_UP'].includes(order.status) &&
+    (!invoice || (invoice && Number(invoice.amountPaid) < Number(invoice.totalAmount)));
 
   return (
     <div className="max-w-2xl mx-auto px-4 py-8">

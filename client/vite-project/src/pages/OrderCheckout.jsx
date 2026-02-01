@@ -21,6 +21,9 @@ export default function OrderCheckout() {
   const [invoice, setInvoice] = useState(null);
   const [loading, setLoading] = useState(true);
   const [paying, setPaying] = useState(false);
+  const [paymentMode, setPaymentMode] = useState('full'); // 'full' or 'partial'
+  const [partialAmount, setPartialAmount] = useState('');
+  const [minPayment, setMinPayment] = useState(0);
 
   useEffect(() => {
     if (!user) {
@@ -44,6 +47,12 @@ export default function OrderCheckout() {
         }
         if (cancelled) return;
         setInvoice(inv);
+        
+        // Calculate minimum payment (50% by default)
+        const remaining = Number(inv.totalAmount) - Number(inv.amountPaid);
+        const minPmt = remaining * 0.5; // 50% minimum
+        setMinPayment(minPmt);
+        setPartialAmount(minPmt.toFixed(2));
       } catch (err) {
         if (!cancelled) navigate('/orders');
       } finally {
@@ -55,17 +64,33 @@ export default function OrderCheckout() {
   }, [id, user, navigate]);
 
   const totalAmount = invoice ? Number(invoice.totalAmount) - Number(invoice.amountPaid) : 0;
+  const hasPartialPayment = invoice && Number(invoice.amountPaid) > 0; // Check if any payment already made
+  const paymentAmount = paymentMode === 'full' ? totalAmount : parseFloat(partialAmount) || 0;
 
   const handlePay = async () => {
     if (totalAmount <= 0) {
       navigate(`/orders/${id}/confirmation`);
       return;
     }
+
+    // Validate partial payment amount
+    if (paymentMode === 'partial') {
+      if (paymentAmount < minPayment) {
+        alert(`Minimum payment required is ₹${minPayment.toFixed(2)}`);
+        return;
+      }
+      if (paymentAmount > totalAmount) {
+        alert(`Payment amount cannot exceed remaining balance of ₹${totalAmount.toFixed(2)}`);
+        return;
+      }
+    }
+
     setPaying(true);
     try {
       const { data } = await api.post('/payments/create-order', {
-        amount: totalAmount,
+        amount: paymentAmount,
         invoiceId: invoice.id,
+        isPartialPayment: paymentMode === 'partial',
       });
       const Razorpay = await loadRazorpay();
       const options = {
@@ -98,7 +123,6 @@ export default function OrderCheckout() {
         setPaying(false);
         alert('Payment failed');
       });
-      // Handle modal dismissal (user closes without paying)
       rzp.on('payment.cancel', () => {
         setPaying(false);
       });
@@ -142,15 +166,100 @@ export default function OrderCheckout() {
             <span>Tax (18%)</span>
             <span>₹{Number(order.taxAmount).toFixed(2)}</span>
           </p>
-          <p className="flex justify-between font-bold text-lg">
-            <span>Amount to pay</span>
+          {Number(order.securityDeposit) > 0 && (
+            <p className="flex justify-between text-blue-600">
+              <span>Security Deposit (Refundable)</span>
+              <span>₹{Number(order.securityDeposit).toFixed(2)}</span>
+            </p>
+          )}
+          <p className="flex justify-between font-bold text-lg pt-2 border-t">
+            <span>Total Amount</span>
+            <span>₹{Number(invoice?.totalAmount || 0).toFixed(2)}</span>
+          </p>
+          {Number(invoice?.amountPaid || 0) > 0 && (
+            <p className="flex justify-between text-green-600">
+              <span>Already Paid</span>
+              <span>₹{Number(invoice.amountPaid).toFixed(2)}</span>
+            </p>
+          )}
+          <p className="flex justify-between font-bold text-lg text-amber-600">
+            <span>Amount Due</span>
             <span>₹{totalAmount.toFixed(2)}</span>
           </p>
         </div>
       </div>
+
+      {/* Payment Mode Selection */}
+      <div className="bg-white rounded-xl border border-slate-200 p-6 mb-6">
+        <h3 className="font-semibold text-slate-800 mb-4">Payment Options</h3>
+        <div className="space-y-3">
+          <label className="flex items-center p-3 border rounded-lg cursor-pointer hover:bg-slate-50">
+            <input
+              type="radio"
+              name="paymentMode"
+              value="full"
+              checked={paymentMode === 'full'}
+              onChange={(e) => setPaymentMode(e.target.value)}
+              className="mr-3"
+            />
+            <div className="flex-1">
+              <div className="font-medium">Pay Full Amount</div>
+              <div className="text-sm text-slate-600">₹{totalAmount.toFixed(2)}</div>
+            </div>
+          </label>
+          <label className={`flex items-start p-3 border rounded-lg ${hasPartialPayment ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer hover:bg-slate-50'}`}>
+            <input
+              type="radio"
+              name="paymentMode"
+              value="partial"
+              checked={paymentMode === 'partial'}
+              onChange={(e) => setPaymentMode(e.target.value)}
+              disabled={hasPartialPayment}
+              className="mr-3 mt-1"
+            />
+            <div className="flex-1">
+              <div className="font-medium">Partial Payment</div>
+              {hasPartialPayment ? (
+                <div className="text-sm text-amber-600 font-medium">
+                  Not available - Remaining balance must be paid in full
+                </div>
+              ) : (
+                <>
+                  <div className="text-sm text-slate-600 mb-2">
+                    Minimum: ₹{minPayment.toFixed(2)} (50% of balance)
+                  </div>
+                  {paymentMode === 'partial' && (
+                    <input
+                      type="number"
+                      value={partialAmount}
+                      onChange={(e) => setPartialAmount(e.target.value)}
+                      min={minPayment}
+                      max={totalAmount}
+                      step="0.01"
+                      className="w-full px-3 py-2 border rounded-lg"
+                      placeholder={`Min: ₹${minPayment.toFixed(2)}`}
+                    />
+                  )}
+                </>
+              )}
+            </div>
+          </label>
+        </div>
+      </div>
+
       <div className="bg-slate-50 rounded-lg p-4 mb-6">
         <p className="text-sm text-slate-600">Card payment via Razorpay</p>
         <p className="text-xs text-slate-500 mt-1">Test mode – use Razorpay test cards</p>
+        {Number(order.securityDeposit) > 0 && (
+          <p className="text-xs text-blue-600 mt-2">
+            Note: Security deposit of ₹{Number(order.securityDeposit).toFixed(2)} will be refunded after successful return
+          </p>
+        )}
+        {hasPartialPayment && (
+          <p className="text-xs text-amber-600 mt-2 font-medium">
+            ⚠️ A partial payment has been made. Remaining balance must be paid in full.
+          </p>
+        )}
       </div>
       <div className="flex gap-4">
         <Link
@@ -164,7 +273,7 @@ export default function OrderCheckout() {
           disabled={paying}
           className="flex-1 py-3 bg-teal-600 text-white rounded-lg hover:bg-teal-700 disabled:opacity-50"
         >
-          {paying ? 'Processing...' : 'Pay Now'}
+          {paying ? 'Processing...' : `Pay ₹${paymentAmount.toFixed(2)}`}
         </button>
       </div>
     </div>

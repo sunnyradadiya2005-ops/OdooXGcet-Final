@@ -25,6 +25,19 @@ profileRoutes.get('/', async (req, res) => {
                         companyName: true,
                         gstNumber: true,
                         category: true,
+                        address: true,
+                        city: true,
+                        state: true,
+                        zipCode: true,
+                        country: true,
+                        phone: true,
+                        website: true,
+                        bankName: true,
+                        bankAccount: true,
+                        ifscCode: true,
+                        enableLateFee: true,
+                        lateFeeAmount: true,
+                        minPaymentPercent: true,
                     },
                 },
             },
@@ -43,7 +56,7 @@ profileRoutes.get('/', async (req, res) => {
 // Update profile
 profileRoutes.put('/', async (req, res) => {
     try {
-        const { firstName, lastName, vendorCompanyName, vendorGST } = req.body;
+        const { firstName, lastName, vendor: vendorData } = req.body;
 
         // Update user
         const updated = await prisma.user.update({
@@ -55,14 +68,40 @@ profileRoutes.put('/', async (req, res) => {
         });
 
         // Update vendor if applicable
-        if (req.user.vendor && (vendorCompanyName || vendorGST)) {
-            await prisma.vendor.update({
-                where: { id: req.user.vendor.id },
-                data: {
-                    ...(vendorCompanyName && { companyName: vendorCompanyName }),
-                    ...(vendorGST && { gstNumber: vendorGST }),
-                },
-            });
+        if (req.user.vendor && vendorData) {
+            const updateData = {};
+            
+            // Company info
+            if (vendorData.companyName) updateData.companyName = vendorData.companyName;
+            if (vendorData.gstNumber) updateData.gstNumber = vendorData.gstNumber;
+            
+            // Address
+            if (vendorData.address !== undefined) updateData.address = vendorData.address;
+            if (vendorData.city !== undefined) updateData.city = vendorData.city;
+            if (vendorData.state !== undefined) updateData.state = vendorData.state;
+            if (vendorData.zipCode !== undefined) updateData.zipCode = vendorData.zipCode;
+            if (vendorData.country !== undefined) updateData.country = vendorData.country;
+            
+            // Contact
+            if (vendorData.phone !== undefined) updateData.phone = vendorData.phone;
+            if (vendorData.website !== undefined) updateData.website = vendorData.website;
+            
+            // Bank details
+            if (vendorData.bankName !== undefined) updateData.bankName = vendorData.bankName;
+            if (vendorData.bankAccount !== undefined) updateData.bankAccount = vendorData.bankAccount;
+            if (vendorData.ifscCode !== undefined) updateData.ifscCode = vendorData.ifscCode;
+            
+            // Late fee settings
+            if (vendorData.enableLateFee !== undefined) updateData.enableLateFee = vendorData.enableLateFee;
+            if (vendorData.lateFeeAmount !== undefined) updateData.lateFeeAmount = parseFloat(vendorData.lateFeeAmount);
+            if (vendorData.minPaymentPercent !== undefined) updateData.minPaymentPercent = parseFloat(vendorData.minPaymentPercent);
+            
+            if (Object.keys(updateData).length > 0) {
+                await prisma.vendor.update({
+                    where: { id: req.user.vendor.id },
+                    data: updateData,
+                });
+            }
         }
 
         res.json({ message: 'Profile updated', user: updated });

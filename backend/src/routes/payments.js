@@ -4,6 +4,7 @@ import crypto from 'crypto';
 import { Decimal } from '@prisma/client/runtime/library';
 import prisma from '../lib/prisma.js';
 import { authenticate, requireRole } from '../middleware/auth.js';
+import { sendPaymentConfirmationEmail } from '../utils/email.js';
 
 export const paymentRoutes = Router();
 
@@ -14,8 +15,37 @@ const razorpay = new Razorpay({
 
 paymentRoutes.post('/create-order', authenticate, async (req, res) => {
   try {
-    const { amount, invoiceId, currency = 'INR' } = req.body;
+    const { amount, invoiceId, currency = 'INR', isPartialPayment = false } = req.body;
     const amtPaise = Math.round(parseFloat(amount) * 100);
+
+    // Validate partial payment if applicable
+    if (isPartialPayment && invoiceId) {
+      const invoice = await prisma.invoice.findFirst({
+        where: {
+          id: invoiceId,
+          ...(req.user.role === 'CUSTOMER' ? { customerId: req.user.id } : {}),
+        },
+        include: {
+          vendor: { select: { minPaymentPercent: true } },
+        },
+      });
+
+      if (invoice) {
+        const totalAmount = Number(invoice.totalAmount);
+        const alreadyPaid = Number(invoice.amountPaid);
+        const remaining = totalAmount - alreadyPaid;
+        const minPaymentPercent = invoice.vendor?.minPaymentPercent || 50;
+        const minPayment = (remaining * minPaymentPercent) / 100;
+
+        if (amount < minPayment) {
+          return res.status(400).json({
+            error: `Minimum payment required is ₹${minPayment.toFixed(2)} (${minPaymentPercent}% of remaining balance)`,
+            minPayment,
+            minPaymentPercent,
+          });
+        }
+      }
+    }
 
     const order = await razorpay.orders.create({
       amount: amtPaise,
@@ -81,6 +111,19 @@ paymentRoutes.post('/verify', authenticate, async (req, res) => {
           data: { amountPaid: newAmountPaid, status: newStatus },
         });
 
+        // Send payment confirmation email
+        try {
+          const fullInvoice = await prisma.invoice.findUnique({
+            where: { id: invoiceId },
+            include: { customer: true, order: true }
+          });
+          if (fullInvoice && fullInvoice.customer) {
+            await sendPaymentConfirmationEmail(fullInvoice, Number(paidAmount), fullInvoice.customer);
+          }
+        } catch (emailErr) {
+          console.error('Failed to send payment email:', emailErr);
+        }
+
         // Remove items from cart now that payment is verified
         if (newStatus === 'PAID' && invoice.order?.items?.length) {
           try {
@@ -136,6 +179,19 @@ paymentRoutes.post('/register', authenticate, requireRole('VENDOR', 'ADMIN'), as
       where: { id: invoiceId },
       data: { amountPaid: newAmountPaid, status: newStatus },
     });
+
+    // Send payment confirmation email
+    try {
+      const fullInvoice = await prisma.invoice.findUnique({
+        where: { id: invoiceId },
+        include: { customer: true, order: true }
+      });
+      if (fullInvoice && fullInvoice.customer) {
+        await sendPaymentConfirmationEmail(fullInvoice, Number(paidAmount), fullInvoice.customer);
+      }
+    } catch (emailErr) {
+      console.error('Failed to send payment email:', emailErr);
+    }
 
     res.json({ message: 'Payment registered', status: newStatus });
   } catch (err) {

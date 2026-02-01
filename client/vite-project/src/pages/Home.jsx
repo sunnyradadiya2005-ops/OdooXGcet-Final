@@ -176,7 +176,7 @@ export default function Home() {
                       )}
 
                       {/* Sold Out Badge */}
-                      {p.stockQty <= 0 && (
+                      {(p.availableQty ?? p.stockQty) <= 0 && (
                         <div className="absolute inset-0 bg-white/60 flex items-center justify-center">
                           <span className="bg-red-600 text-white px-4 py-2 rounded-full font-bold text-sm shadow-lg">
                             Sold Out
@@ -195,9 +195,9 @@ export default function Home() {
                         )}
                       </p>
                       <p className="text-xs text-slate-500 mt-1.5">
-                        {p.stockQty > 0 ? (
-                          <span className={p.stockQty <= 5 ? 'text-orange-600 font-medium' : 'text-green-600'}>
-                            {p.stockQty} available
+                        {(p.availableQty ?? p.stockQty) > 0 ? (
+                          <span className={(p.availableQty ?? p.stockQty) <= 5 ? 'text-orange-600 font-medium' : 'text-green-600'}>
+                            {p.availableQty ?? p.stockQty} available
                           </span>
                         ) : (
                           <span className="text-red-600 font-medium">Out of stock</span>

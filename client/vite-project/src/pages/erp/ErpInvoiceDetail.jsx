@@ -40,6 +40,24 @@ export default function ErpInvoiceDetail() {
     }
   };
 
+  const handleDownloadPDF = async () => {
+    try {
+      const response = await api.get(`/invoices/${id}/pdf`, {
+        responseType: 'blob',
+      });
+      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', `invoice-${invoice.invoiceNumber}.pdf`);
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(url);
+    } catch (err) {
+      alert('Failed to download PDF');
+    }
+  };
+
   if (loading) return <ErpLayout><div className="animate-pulse h-64 bg-slate-200 rounded-xl" /></ErpLayout>;
   if (!invoice) return <ErpLayout><div className="text-slate-600">Invoice not found</div></ErpLayout>;
 
@@ -57,7 +75,7 @@ export default function ErpInvoiceDetail() {
               Post
             </button>
           )}
-          <button className="px-4 py-2 border rounded-lg">Print PDF</button>
+          <button onClick={handleDownloadPDF} className="px-4 py-2 border rounded-lg hover:bg-slate-50 transition-colors">Print PDF</button>
         </div>
       </div>
 
@@ -135,14 +153,58 @@ export default function ErpInvoiceDetail() {
         <div className="mt-4 pt-4 border-t space-y-2 text-right">
           <p className="text-slate-600">Subtotal: ₹{Number(invoice.subtotal).toFixed(2)}</p>
           <p className="text-slate-600">Tax: ₹{Number(invoice.taxAmount).toFixed(2)}</p>
-          {Number(invoice.lateFee) > 0 && (
-            <p className="text-slate-600">Late fee: ₹{Number(invoice.lateFee).toFixed(2)}</p>
+          {Number(invoice.securityDeposit) > 0 && (
+            <p className="text-blue-600 font-medium">Security Deposit (Refundable): ₹{Number(invoice.securityDeposit).toFixed(2)}</p>
           )}
-          <p className="font-bold text-lg">Total: ₹{Number(invoice.totalAmount).toFixed(2)}</p>
-          <p className="text-green-600">Paid: ₹{Number(invoice.amountPaid).toFixed(2)}</p>
-          <p className="font-semibold">Remaining: ₹{remaining.toFixed(2)}</p>
+          {Number(invoice.lateFee) > 0 && (
+            <p className="text-red-600 font-medium">Late Fee: ₹{Number(invoice.lateFee).toFixed(2)}</p>
+          )}
+          <p className="font-bold text-lg pt-2 border-t">Total: ₹{Number(invoice.totalAmount).toFixed(2)}</p>
+          <p className="text-green-600 font-medium">Paid: ₹{Number(invoice.amountPaid).toFixed(2)}</p>
+          <p className="font-semibold text-lg">Remaining: ₹{remaining.toFixed(2)}</p>
         </div>
       </div>
+
+      {/* Payment History */}
+      {invoice.payments && invoice.payments.length > 0 && (
+        <div className="bg-white rounded-xl border border-slate-200 p-6 mb-6">
+          <h3 className="font-semibold text-slate-800 mb-4">Payment History</h3>
+          <table className="w-full">
+            <thead>
+              <tr className="text-left text-slate-600 text-sm">
+                <th className="pb-2">Date</th>
+                <th className="pb-2">Method</th>
+                <th className="pb-2">Payment ID</th>
+                <th className="pb-2">Status</th>
+                <th className="pb-2 text-right">Amount</th>
+              </tr>
+            </thead>
+            <tbody>
+              {invoice.payments.map((payment) => (
+                <tr key={payment.id} className="border-t border-slate-100">
+                  <td className="py-3 text-sm">
+                    {new Date(payment.paidAt || payment.createdAt).toLocaleDateString()}
+                  </td>
+                  <td className="py-3 text-sm capitalize">{payment.method}</td>
+                  <td className="py-3 text-xs text-slate-500">
+                    {payment.razorpayPaymentId || 'Manual'}
+                  </td>
+                  <td className="py-3">
+                    <span className={`inline-block px-2 py-1 rounded text-xs font-medium ${
+                      payment.status === 'COMPLETED' 
+                        ? 'bg-green-100 text-green-800' 
+                        : 'bg-slate-100 text-slate-800'
+                    }`}>
+                      {payment.status}
+                    </span>
+                  </td>
+                  <td className="py-3 text-right font-medium">₹{Number(payment.amount).toFixed(2)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
 
       {canRegisterPayment && remaining > 0 && (
         <div className="bg-white rounded-xl border border-slate-200 p-6">
@@ -161,6 +223,12 @@ export default function ErpInvoiceDetail() {
               className="px-4 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 disabled:opacity-50"
             >
               Register
+            </button>
+            <button
+              onClick={() => setRegisterAmount(remaining.toFixed(2))}
+              className="px-4 py-2 border border-slate-300 rounded-lg hover:bg-slate-50"
+            >
+              Full Amount (₹{remaining.toFixed(2)})
             </button>
           </div>
         </div>

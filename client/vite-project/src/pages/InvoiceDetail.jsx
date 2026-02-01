@@ -171,31 +171,66 @@ export default function InvoiceDetail() {
                     <p className="text-slate-600">Subtotal: ₹{Number(invoice.subtotal).toFixed(2)}</p>
                     <p className="text-slate-600">Tax (18%): ₹{Number(invoice.taxAmount).toFixed(2)}</p>
                     {Number(invoice.securityDeposit) > 0 && (
-                        <p className="text-slate-600">
-                            Security Deposit: ₹{Number(invoice.securityDeposit).toFixed(2)}
+                        <p className="text-blue-600 font-medium">
+                            Security Deposit (Refundable): ₹{Number(invoice.securityDeposit).toFixed(2)}
                         </p>
                     )}
                     {Number(invoice.lateFee) > 0 && (
-                        <p className="text-red-600">Late Fee: ₹{Number(invoice.lateFee).toFixed(2)}</p>
+                        <p className="text-red-600 font-medium">Late Fee: ₹{Number(invoice.lateFee).toFixed(2)}</p>
                     )}
-                    <p className="font-bold text-lg">Total: ₹{Number(invoice.totalAmount).toFixed(2)}</p>
-                    <p className="text-green-600">Paid: ₹{Number(invoice.amountPaid).toFixed(2)}</p>
+                    <p className="font-bold text-lg pt-2 border-t">Total: ₹{Number(invoice.totalAmount).toFixed(2)}</p>
+                    <p className="text-green-600 font-medium">Paid: ₹{Number(invoice.amountPaid).toFixed(2)}</p>
                     {remaining > 0 && (
-                        <p className="font-semibold text-amber-600">Balance Due: ₹{remaining.toFixed(2)}</p>
+                        <p className="font-semibold text-amber-600 text-xl">Balance Due: ₹{remaining.toFixed(2)}</p>
                     )}
                 </div>
             </div>
 
-            {
-                canPay && (
-                    <Link
-                        to={`/orders/${invoice.order?.id}/checkout`}
-                        className="block w-full py-3 bg-teal-600 text-white text-center rounded-lg hover:bg-teal-700"
-                    >
-                        Pay Now (₹{remaining.toFixed(2)})
-                    </Link>
-                )
-            }
+            {/* Payment History */}
+            {invoice.payments && invoice.payments.length > 0 && (
+                <div className="bg-white rounded-xl border border-slate-200 p-6 mb-6">
+                    <h3 className="font-semibold text-slate-800 mb-4">Payment History</h3>
+                    <table className="w-full">
+                        <thead>
+                            <tr className="text-left text-slate-600 text-sm">
+                                <th className="pb-2">Date</th>
+                                <th className="pb-2">Method</th>
+                                <th className="pb-2">Status</th>
+                                <th className="pb-2 text-right">Amount</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {invoice.payments.map((payment) => (
+                                <tr key={payment.id} className="border-t border-slate-100">
+                                    <td className="py-3 text-sm">
+                                        {new Date(payment.paidAt || payment.createdAt).toLocaleDateString()}
+                                    </td>
+                                    <td className="py-3 text-sm capitalize">{payment.method}</td>
+                                    <td className="py-3">
+                                        <span className={`inline-block px-2 py-1 rounded text-xs font-medium ${
+                                            payment.status === 'COMPLETED' 
+                                                ? 'bg-green-100 text-green-800' 
+                                                : 'bg-slate-100 text-slate-800'
+                                        }`}>
+                                            {payment.status}
+                                        </span>
+                                    </td>
+                                    <td className="py-3 text-right font-medium">₹{Number(payment.amount).toFixed(2)}</td>
+                                </tr>
+                            ))}
+                        </tbody>
+                    </table>
+                </div>
+            )}
+
+            {canPay && (
+                <Link
+                    to={`/orders/${invoice.order?.id}/checkout`}
+                    className="block w-full py-3 bg-teal-600 text-white text-center rounded-lg hover:bg-teal-700 font-medium"
+                >
+                    Pay Remaining Balance (₹{remaining.toFixed(2)})
+                </Link>
+            )}
         </div >
     );
 }
